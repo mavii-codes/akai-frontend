@@ -8,6 +8,7 @@ import {
   ListTodo,
   CalendarDays,
   Sparkles,
+  Settings,
   LogOut,
 } from "lucide-react";
 import { PandaLogo } from "@/components/brand/panda-logo";
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/tasks", label: "Task", icon: ListTodo },
   { href: "/planner", label: "Planner", icon: CalendarDays },
   { href: "/ai-assistant", label: "AI Assistant", icon: Sparkles },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {

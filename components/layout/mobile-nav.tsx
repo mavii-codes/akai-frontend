@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListTodo, CalendarDays, Sparkles, LogOut } from "lucide-react";
+import { Home, ListTodo, CalendarDays, Sparkles, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { href: "/tasks", label: "Task", icon: ListTodo },
   { href: "/planner", label: "Planner", icon: CalendarDays },
   { href: "/ai-assistant", label: "AI", icon: Sparkles },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function MobileNav() {
