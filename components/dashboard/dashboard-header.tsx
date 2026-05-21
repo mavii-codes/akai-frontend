@@ -4,6 +4,14 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Bell, Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 type DashboardHeaderProps = {
   greeting?: string;
@@ -28,22 +36,60 @@ export function DashboardHeader({
           <p className="text-sm text-emerald-600/70 mt-0.5">{subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-xl text-emerald-700 hover:bg-emerald-50"
-            aria-label="Notifications"
-          >
-            <Bell className="size-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-xl text-emerald-700 hover:bg-emerald-50"
-            aria-label="Calendar"
-          >
-            <Calendar className="size-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-xl text-emerald-700 hover:bg-emerald-50"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[260px]">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
+                You have 2 new reminders for today.
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
+                Study session starts at 11:00 AM.
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
+                Project deadline due tomorrow.
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-xl text-emerald-700 hover:bg-emerald-50"
+                aria-label="Calendar"
+              >
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[260px]">
+              <DropdownMenuLabel>Upcoming events</DropdownMenuLabel>
+              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
+                Math exam on May 22 at 09:00 AM.
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
+                Biology quiz on May 24.
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
+                Research paper due May 29.
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Link href="/tasks">
             <Button className="rounded-xl gradient-green border-0 shadow-md shadow-emerald-200/40 gap-2">
               <Plus className="size-4" />

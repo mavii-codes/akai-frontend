@@ -52,7 +52,7 @@ export function LoginForm() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="student@university.edu"
+                  placeholder="user@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10 h-11 rounded-xl border-emerald-100 focus-visible:ring-emerald-400/30 bg-white/80"

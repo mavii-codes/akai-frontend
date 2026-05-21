@@ -99,7 +99,7 @@ export function RegisterForm() {
                 <Input
                   id="reg-email"
                   type="email"
-                  placeholder="student@university.edu"
+                  placeholder="user@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, email: true }))}
