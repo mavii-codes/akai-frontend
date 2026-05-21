@@ -1,191 +1,111 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { Camera, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useEffect, useState } from "react";
 
-type ProfileData = {
+type Profile = {
   name: string;
   email: string;
   about: string;
   profileImage?: string;
 };
 
-function readFileAsBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-      } else {
-        reject(new Error("Unable to read file."));
-      }
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
+const STORAGE_KEY = "akai-profile";
 
 export default function SettingsPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [about, setAbout] = useState("");
-  const [profileImage, setProfileImage] = useState<string>("");
+  const [profile, setProfile] = useState<Profile>({ name: "", email: "", about: "", profileImage: "" });
+  const [original, setOriginal] = useState<Profile | null>(null);
   const [saved, setSaved] = useState(false);
-  const [originalProfile, setOriginalProfile] = useState<ProfileData>({
-    name: "",
-    email: "",
-    about: "",
-    profileImage: "",
-  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const savedData = window.localStorage.getItem("akai-profile");
-    if (!savedData) return;
-
-    try {
-      const profile = JSON.parse(savedData) as ProfileData;
-      setName(profile.name ?? "");
-      setEmail(profile.email ?? "");
-      setAbout(profile.about ?? "");
-      setProfileImage(profile.profileImage ?? "");
-      setOriginalProfile({
-        name: profile.name ?? "",
-        email: profile.email ?? "",
-        about: profile.about ?? "",
-        profileImage: profile.profileImage ?? "",
-      });
-    } catch {
-      // ignore malformed saved profile
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as Profile;
+        setProfile(parsed);
+        setOriginal(parsed);
+      } catch (e) {
+        // ignore parse errors
+      }
     }
   }, []);
 
-  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const readFileAsBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
-    const base64 = await readFileAsBase64(file);
-    setProfileImage(base64);
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const data = await readFileAsBase64(file);
+      setProfile((p) => ({ ...p, profileImage: data }));
+    } catch {
+      // ignore
+    }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (typeof window === "undefined") return;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setProfile((p) => ({ ...p, [name]: value }));
+  };
 
-    const profile = { name, email, about, profileImage };
-    window.localStorage.setItem("akai-profile", JSON.stringify(profile));
-    setOriginalProfile(profile);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    setOriginal(profile);
     setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const handleCancel = () => {
-    setName(originalProfile.name);
-    setEmail(originalProfile.email);
-    setAbout(originalProfile.about);
-    setProfileImage(originalProfile.profileImage ?? "");
-    setSaved(false);
+    if (original) setProfile(original);
+    else setProfile({ name: "", email: "", about: "", profileImage: "" });
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-      <div className="flex flex-col gap-3">
-        <div className="inline-flex items-center gap-3 rounded-3xl bg-emerald-100/80 p-4 text-emerald-900 shadow-sm ring-1 ring-emerald-200">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-200 text-emerald-700">
-            <Settings className="size-5" />
+    <div className="p-6 max-w-3xl">
+      <h2 className="text-2xl font-semibold mb-4">Settings</h2>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex items-center gap-6">
+          <div className="w-28 h-28 rounded-full bg-emerald-50 overflow-hidden flex items-center justify-center">
+            {profile.profileImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.profileImage} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              <div className="text-emerald-400">No Image</div>
+            )}
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-800/70">
-              Settings
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-emerald-950">
-              Profile settings
-            </h1>
-          </div>
-        </div>
-        <p className="max-w-2xl text-sm text-emerald-700/90">
-          Update your profile details and choose a profile image. Changes are saved locally in your browser.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="grid gap-6 rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-emerald-100">
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-start">
-          <div className="grid gap-2">
-            <Label htmlFor="profileImage">Profile image</Label>
-            <div className="flex items-center gap-4">
-              <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-emerald-100 bg-emerald-50 shadow-sm">
-                {profileImage ? (
-                  <img src={profileImage} alt="Profile preview" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-emerald-500">
-                    <Camera className="size-6" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-[190px]">
-                <input
-                  id="profileImage"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="file:mr-4 file:rounded-full file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-emerald-700"
-                />
-                <p className="text-xs text-emerald-600/80 mt-2">Upload a photo to personalize your account.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="name">Full name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Jane Doe"
-            />
+            <label className="block text-sm font-medium text-emerald-700">Profile Image</label>
+            <input type="file" accept="image/*" onChange={handleImageChange} className="mt-2" />
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email address</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="jane@study.com"
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="about">About you</Label>
-            <textarea
-              id="about"
-              value={about}
-              onChange={(event) => setAbout(event.target.value)}
-              placeholder="I like organizing my study plan around creative projects..."
-              className="min-h-[148px] rounded-xl border border-input bg-transparent px-3 py-2 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-emerald-700">Name</label>
+          <input name="name" value={profile.name} onChange={handleChange} className="mt-1 block w-full rounded-md border border-emerald-200 p-2" />
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button type="submit" className="rounded-xl px-6 py-2">
-              Save profile
-            </Button>
-            <Button type="button" variant="outline" className="rounded-xl px-6 py-2" onClick={handleCancel}>
-              Cancel changes
-            </Button>
-          </div>
-          {saved ? (
-            <p className="text-sm font-medium text-emerald-700">Profile saved locally.</p>
-          ) : (
-            <p className="text-sm text-emerald-600">Your profile data is stored in your browser.</p>
-          )}
+        <div>
+          <label className="block text-sm font-medium text-emerald-700">Email</label>
+          <input name="email" value={profile.email} onChange={handleChange} className="mt-1 block w-full rounded-md border border-emerald-200 p-2" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-emerald-700">About</label>
+          <textarea name="about" value={profile.about} onChange={handleChange} className="mt-1 block w-full rounded-md border border-emerald-200 p-2" rows={4} />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-md">Save</button>
+          <button type="button" onClick={handleCancel} className="px-4 py-2 border rounded-md">Cancel</button>
+          {saved && <span className="text-sm text-emerald-600">Saved</span>}
         </div>
       </form>
     </div>
