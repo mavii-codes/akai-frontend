@@ -12,16 +12,22 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useAuthUser } from "@/hooks/use-auth-user";
+import { getEmailUsername } from "@/lib/auth-session";
 
-type DashboardHeaderProps = {
-  greeting?: string;
-  subtitle?: string;
-};
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
-export function DashboardHeader({
-  greeting = "Good morning, Student! 👋",
-  subtitle = "Let's make today productive",
-}: DashboardHeaderProps) {
+export function DashboardHeader() {
+  const { email, displayName, ready } = useAuthUser();
+
+  const name = ready && email ? getEmailUsername(email) : displayName;
+  const greeting = `${getTimeGreeting()}, ${name}! 👋`;
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -10 }}
@@ -29,13 +35,17 @@ export function DashboardHeader({
       className="sticky top-0 z-30 glass border-b border-emerald-100/60 px-4 md:px-8 py-4"
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-emerald-900">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-emerald-900 truncate">
             {greeting}
           </h1>
-          <p className="text-sm text-emerald-600/70 mt-0.5">{subtitle}</p>
+          <p className="text-sm text-emerald-600/70 mt-0.5 truncate">
+            {email
+              ? `Signed in as ${email}`
+              : "Let's make today productive and amazing."}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

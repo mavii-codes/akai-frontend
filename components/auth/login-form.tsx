@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { AuthDecorations } from "./auth-decorations";
+import { saveAuthSession } from "@/lib/auth-session";
+import { loadProfile, saveProfile } from "@/lib/profile-storage";
 
 export function LoginForm() {
   const router = useRouter();
@@ -21,6 +23,14 @@ export function LoginForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail.includes("@")) return;
+
+    saveAuthSession({ email: trimmedEmail });
+
+    const profile = loadProfile();
+    saveProfile({ ...profile, email: trimmedEmail });
+
     router.push("/home");
   };
 

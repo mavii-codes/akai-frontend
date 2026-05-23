@@ -38,35 +38,38 @@ export const todaysSchedule: ScheduleItem[] = [
   },
 ];
 
+function daysFromNow(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
 export const upcomingDeadlines: Deadline[] = [
   {
     id: "1",
     title: "Math Exam",
-    dueDate: "May 22, 2026",
-    daysLeft: 2,
+    dueDateIso: daysFromNow(2),
     icon: "calculator",
   },
   {
     id: "2",
     title: "Biology Quiz",
-    dueDate: "May 24, 2026",
-    daysLeft: 4,
+    dueDateIso: daysFromNow(4),
     icon: "microscope",
   },
   {
     id: "3",
     title: "Research Paper",
-    dueDate: "May 29, 2026",
-    daysLeft: 9,
+    dueDateIso: daysFromNow(9),
     icon: "file-text",
   },
 ];
 
 export const plannerBlocks: PlannerBlock[] = [
-  { id: "1", time: "8:00 AM", title: "Math Review", type: "study" },
-  { id: "2", time: "10:00 AM", title: "Physics Notes", type: "class" },
-  { id: "3", time: "1:00 PM", title: "Lunch Break", type: "break" },
-  { id: "4", time: "3:00 PM", title: "Programming Practice", type: "study" },
+  { id: "1", time: "8:00 AM", title: "Math Review", type: "study", dayOfWeek: "Mon" },
+  { id: "2", time: "10:00 AM", title: "Physics Notes", type: "class", dayOfWeek: "Tue" },
+  { id: "3", time: "1:00 PM", title: "Lunch Break", type: "break", dayOfWeek: "Fri" },
+  { id: "4", time: "3:00 PM", title: "Programming Practice", type: "study", dayOfWeek: "Wed" },
 ];
 
 export const aiSuggestedPrompts = [

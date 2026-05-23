@@ -38,4 +38,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+
+# Accidental nested copies / system folders (do not commit)
+/akai-frontend/
+/PerfLogs/

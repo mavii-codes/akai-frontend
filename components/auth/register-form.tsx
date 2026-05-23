@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { AuthDecorations } from "./auth-decorations";
 import { cn } from "@/lib/utils";
+import { saveAuthSession } from "@/lib/auth-session";
+import { loadProfile, saveProfile } from "@/lib/profile-storage";
 
 function getPasswordStrength(password: string) {
   let score = 0;
@@ -51,7 +53,18 @@ export function RegisterForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
-    router.push("/login");
+
+    const trimmedEmail = email.trim().toLowerCase();
+    saveAuthSession({ email: trimmedEmail, name: name.trim() });
+
+    const profile = loadProfile();
+    saveProfile({
+      ...profile,
+      name: name.trim(),
+      email: trimmedEmail,
+    });
+
+    router.push("/home");
   };
 
   return (

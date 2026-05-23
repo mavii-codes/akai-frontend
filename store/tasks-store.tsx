@@ -4,12 +4,28 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import { initialTasks } from "@/lib/data";
+import { generateId } from "@/lib/id";
 import type { Priority, Task } from "@/types";
+
+const TASKS_STORAGE_KEY = "akai-tasks";
+
+function loadTasksFromStorage(): Task[] {
+  if (typeof window === "undefined") return initialTasks;
+  try {
+    const raw = localStorage.getItem(TASKS_STORAGE_KEY);
+    if (!raw) return initialTasks;
+    const parsed = JSON.parse(raw) as Task[];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : initialTasks;
+  } catch {
+    return initialTasks;
+  }
+}
 
 type TasksContextValue = {
   tasks: Task[];
@@ -23,13 +39,24 @@ const TasksContext = createContext<TasksContextValue | null>(null);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setTasks(loadTasksFromStorage());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks, hydrated]);
 
   const addTask = useCallback(
     (task: Omit<Task, "id" | "createdAt" | "completed">) => {
       setTasks((prev) => [
         {
           ...task,
-          id: crypto.randomUUID(),
+          id: generateId(),
           completed: false,
           createdAt: new Date().toISOString().split("T")[0],
         },

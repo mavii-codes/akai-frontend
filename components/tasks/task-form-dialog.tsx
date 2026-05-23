@@ -62,7 +62,7 @@ export function TaskFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-2xl border-emerald-100 sm:max-w-md">
+      <DialogContent className="rounded-2xl border-emerald-100 w-[calc(100vw-2rem)] max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle className="text-emerald-900">
             {task ? "Edit Task" : "Add New Task"}
