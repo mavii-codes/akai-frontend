@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Bell, Calendar, Plus } from "lucide-react";
+import { Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,8 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { NotificationsMenu } from "@/components/layout/notifications-menu";
 import { useAuthUser } from "@/hooks/use-auth-user";
-import { getEmailUsername } from "@/lib/auth-session";
 
 function getTimeGreeting() {
   const hour = new Date().getHours();
@@ -23,9 +23,9 @@ function getTimeGreeting() {
 }
 
 export function DashboardHeader() {
-  const { email, displayName, ready } = useAuthUser();
+  const { email, displayName, fullName, ready, isLoggedIn } = useAuthUser();
 
-  const name = ready && email ? getEmailUsername(email) : displayName;
+  const name = ready && isLoggedIn ? displayName : "Student";
   const greeting = `${getTimeGreeting()}, ${name}! 👋`;
 
   return (
@@ -40,38 +40,15 @@ export function DashboardHeader() {
             {greeting}
           </h1>
           <p className="text-sm text-emerald-600/70 mt-0.5 truncate">
-            {email
-              ? `Signed in as ${email}`
+            {isLoggedIn && email
+              ? fullName !== displayName
+                ? `${fullName} · ${email}`
+                : `Signed in as ${email}`
               : "Let's make today productive and amazing."}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-xl text-emerald-700 hover:bg-emerald-50"
-                aria-label="Notifications"
-              >
-                <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[260px]">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
-                You have 2 new reminders for today.
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
-                Study session starts at 11:00 AM.
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
-                Project deadline due tomorrow.
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <NotificationsMenu />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

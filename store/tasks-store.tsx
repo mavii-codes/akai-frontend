@@ -9,41 +9,63 @@ import {
   useState,
   type ReactNode,
 } from "react";
+<<<<<<< HEAD
 import { apiFetch } from "@/lib/api";
 import { initialTasks } from "@/lib/data";
 import { generateId } from "@/lib/id";
 import { isApiSyncEnabled } from "@/lib/use-api-sync";
 import type { Priority, Task } from "@/types";
+=======
+import { generateId } from "@/lib/id";
+import {
+  getCurrentUserEmail,
+  getUserStorageKey,
+  TASKS_KEY_PREFIX,
+} from "@/lib/user-data-storage";
+import { normalizeTask } from "@/lib/task-utils";
+import type { Priority, Task, TaskStatus } from "@/types";
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
 
-const TASKS_STORAGE_KEY = "akai-tasks";
-
-function loadTasksFromStorage(): Task[] {
-  if (typeof window === "undefined") return initialTasks;
+function loadTasksForUser(email: string | null): Task[] {
+  if (typeof window === "undefined" || !email) return [];
   try {
-    const raw = localStorage.getItem(TASKS_STORAGE_KEY);
-    if (!raw) return initialTasks;
+    const raw = localStorage.getItem(getUserStorageKey(TASKS_KEY_PREFIX, email));
+    if (!raw) return [];
     const parsed = JSON.parse(raw) as Task[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : initialTasks;
+    return Array.isArray(parsed) ? parsed.map(normalizeTask) : [];
   } catch {
-    return initialTasks;
+    return [];
   }
 }
 
+export type TaskInput = {
+  title: string;
+  description: string;
+  dueDate: string;
+  priority: Priority;
+  status?: TaskStatus;
+  subject?: string;
+  progress?: number;
+};
+
 type TasksContextValue = {
   tasks: Task[];
-  addTask: (task: Omit<Task, "id" | "createdAt" | "completed">) => void;
+  addTask: (task: TaskInput) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   toggleComplete: (id: string) => void;
+  setTaskStatus: (id: string, status: TaskStatus) => void;
 };
 
 const TasksContext = createContext<TasksContextValue | null>(null);
 
 export function TasksProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+<<<<<<< HEAD
     let cancelled = false;
 
     async function load() {
@@ -68,10 +90,27 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
       window.removeEventListener("akai-auth-updated", onAuth);
+=======
+    const refresh = () => {
+      const email = getCurrentUserEmail();
+      setUserEmail(email);
+      setTasks(loadTasksForUser(email));
+      setHydrated(true);
+    };
+    refresh();
+    window.addEventListener("akai-auth-updated", refresh);
+    window.addEventListener("akai-account-updated", refresh);
+    window.addEventListener("akai-user-data-updated", refresh);
+    return () => {
+      window.removeEventListener("akai-auth-updated", refresh);
+      window.removeEventListener("akai-account-updated", refresh);
+      window.removeEventListener("akai-user-data-updated", refresh);
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
     };
   }, []);
 
   useEffect(() => {
+<<<<<<< HEAD
     if (!hydrated || isApiSyncEnabled()) return;
     localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks, hydrated]);
@@ -100,10 +139,38 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+=======
+    if (!hydrated || !userEmail) return;
+    localStorage.setItem(
+      getUserStorageKey(TASKS_KEY_PREFIX, userEmail),
+      JSON.stringify(tasks)
+    );
+  }, [tasks, hydrated, userEmail]);
+
+  const addTask = useCallback((task: TaskInput) => {
+    const status = task.status ?? "todo";
+    const progress =
+      task.progress ?? (status === "completed" ? 100 : status === "in-progress" ? 30 : 0);
+    setTasks((prev) => [
+      normalizeTask({
+        ...task,
+        id: generateId(),
+        status,
+        subject: task.subject ?? "",
+        progress,
+        completed: status === "completed",
+        createdAt: new Date().toISOString().split("T")[0],
+      }),
+      ...prev,
+    ]);
+  }, []);
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
 
   const updateTask = useCallback((id: string, updates: Partial<Task>) => {
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+      prev.map((t) =>
+        t.id === id ? normalizeTask({ ...t, ...updates }) : t
+      )
     );
     if (isApiSyncEnabled()) {
       void apiFetch(`/api/tasks/${id}`, {
@@ -124,6 +191,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
+<<<<<<< HEAD
         const completed = !t.completed;
         if (isApiSyncEnabled()) {
           void apiFetch(`/api/tasks/${id}`, {
@@ -132,13 +200,48 @@ export function TasksProvider({ children }: { children: ReactNode }) {
           });
         }
         return { ...t, completed };
+=======
+        const done = t.status !== "completed";
+        return normalizeTask({
+          ...t,
+          completed: done,
+          status: done ? "completed" : "todo",
+          progress: done ? 100 : 0,
+        });
+      })
+    );
+  }, []);
+
+  const setTaskStatus = useCallback((id: string, status: TaskStatus) => {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        return normalizeTask({
+          ...t,
+          status,
+          completed: status === "completed",
+          progress:
+            status === "completed"
+              ? 100
+              : status === "in-progress"
+                ? Math.max(t.progress, 10)
+                : 0,
+        });
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
       })
     );
   }, []);
 
   const value = useMemo(
-    () => ({ tasks, addTask, updateTask, deleteTask, toggleComplete }),
-    [tasks, addTask, updateTask, deleteTask, toggleComplete]
+    () => ({
+      tasks,
+      addTask,
+      updateTask,
+      deleteTask,
+      toggleComplete,
+      setTaskStatus,
+    }),
+    [tasks, addTask, updateTask, deleteTask, toggleComplete, setTaskStatus]
   );
 
   return (

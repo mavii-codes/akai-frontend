@@ -15,33 +15,43 @@ import {
   type DeadlineCategory,
 } from "@/lib/deadline-categories";
 import type { DeadlineInput } from "@/store/deadlines-store";
+import type { Deadline } from "@/types";
 import { cn } from "@/lib/utils";
 
 type DeadlineFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  deadline?: Deadline | null;
   onSave: (data: DeadlineInput) => void;
 };
 
 export function DeadlineFormDialog({
   open,
   onOpenChange,
+  deadline,
   onSave,
 }: DeadlineFormDialogProps) {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
+<<<<<<< HEAD
   const [category, setCategory] = useState<DeadlineCategory>("assignment");
+=======
+  const [icon, setIcon] = useState("file-text");
+  const isEdit = Boolean(deadline);
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
 
   useEffect(() => {
-    if (open && !title) {
-      setDueDate(new Date().toISOString().split("T")[0]);
-    }
-    if (!open) {
+    if (!open) return;
+    if (deadline) {
+      setTitle(deadline.title);
+      setDueDate(deadline.dueDateIso);
+      setIcon(deadline.icon ?? "file-text");
+    } else {
       setTitle("");
       setDueDate(new Date().toISOString().split("T")[0]);
       setCategory("assignment");
     }
-  }, [open, title]);
+  }, [open, deadline]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +64,9 @@ export function DeadlineFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-2xl border-emerald-100 w-[min(100vw-1.5rem,28rem)] max-w-md mx-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-emerald-900 text-lg">Add Deadline</DialogTitle>
+          <DialogTitle className="text-emerald-900 text-lg">
+            {isEdit ? "Edit Deadline" : "Add Deadline"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -82,6 +94,7 @@ export function DeadlineFormDialog({
           <div className="space-y-2">
             <Label>Category</Label>
             <div className="grid grid-cols-2 gap-2">
+<<<<<<< HEAD
               {DEADLINE_CATEGORIES.map((opt) => {
                 const Icon = opt.icon;
                 return (
@@ -103,13 +116,30 @@ export function DeadlineFormDialog({
                   </button>
                 );
               })}
+=======
+              {ICON_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setIcon(opt.value)}
+                  className={cn(
+                    "rounded-xl py-2.5 text-sm font-medium border transition-all touch-manipulation min-h-[44px]",
+                    icon === opt.value
+                      ? "bg-emerald-600 text-white border-emerald-600"
+                      : "border-emerald-100 text-emerald-700 hover:bg-emerald-50"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
             </div>
           </div>
           <Button
             type="submit"
             className="w-full h-11 rounded-xl gradient-green border-0 text-base"
           >
-            Add Deadline
+            {isEdit ? "Save Changes" : "Add Deadline"}
           </Button>
         </form>
       </DialogContent>

@@ -1,5 +1,7 @@
 export type Priority = "low" | "medium" | "high";
 
+export type TaskStatus = "todo" | "in-progress" | "completed";
+
 export type Task = {
   id: string;
   title: string;
@@ -8,6 +10,11 @@ export type Task = {
   priority: Priority;
   completed: boolean;
   createdAt: string;
+  status: TaskStatus;
+  /** Subject label shown on task cards (e.g. Math, Physics) */
+  subject: string;
+  /** 0–100, used for in-progress tasks */
+  progress: number;
 };
 
 export type ScheduleStatus = "in-progress" | "upcoming" | "break";
@@ -40,6 +47,13 @@ export type PlannerBlock = {
   dayOfWeek: DayOfWeek;
   /** ISO date (YYYY-MM-DD) for monthly calendar dots */
   date?: string;
+};
+
+export type Subject = {
+  id: string;
+  name: string;
+  color: string;
+  dailyHours: number;
 };
 
 export type ChatMessage = {

@@ -2,7 +2,19 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+<<<<<<< HEAD
 import { Plus, ChevronRight } from "lucide-react";
+=======
+import {
+  Calculator,
+  Microscope,
+  FileText,
+  BookOpen,
+  Plus,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
 import {
   useDeadlines,
   getDaysLeft,
@@ -12,10 +24,15 @@ import { getDeadlineCategoryMeta } from "@/lib/deadline-categories";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeadlineFormDialog } from "@/components/dashboard/deadline-form-dialog";
+import { DeadlinesViewAll } from "@/components/dashboard/deadlines-view-all";
+import type { Deadline } from "@/types";
+
+const PREVIEW_COUNT = 3;
 
 const PREVIEW_COUNT = 3;
 
 export function UpcomingDeadlines() {
+<<<<<<< HEAD
   const { deadlines, addDeadline } = useDeadlines();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -24,14 +41,34 @@ export function UpcomingDeadlines() {
   const visibleDeadlines = showAll
     ? deadlines
     : deadlines.slice(0, PREVIEW_COUNT);
+=======
+  const { deadlines, addDeadline, updateDeadline, deleteDeadline } = useDeadlines();
+  const [addOpen, setAddOpen] = useState(false);
+  const [viewAllOpen, setViewAllOpen] = useState(false);
+  const [editing, setEditing] = useState<Deadline | null>(null);
+
+  const preview = deadlines.slice(0, PREVIEW_COUNT);
+
+  const openEdit = (deadline: Deadline) => {
+    setEditing(deadline);
+    setAddOpen(true);
+  };
+
+  const handleDelete = (deadline: Deadline) => {
+    if (window.confirm(`Delete "${deadline.title}"?`)) {
+      deleteDeadline(deadline.id);
+    }
+  };
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="glass rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm border border-emerald-100/60"
+      className="glass rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm border border-emerald-100/60 w-full min-w-0"
     >
+<<<<<<< HEAD
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <h3 className="font-semibold text-emerald-900 text-base sm:text-lg">
           Upcoming Deadlines
@@ -51,23 +88,34 @@ export function UpcomingDeadlines() {
           </Button>
         ) : null}
       </div>
+=======
+      <h3 className="font-semibold text-emerald-900 text-base sm:text-lg mb-4">
+        Upcoming Deadlines
+      </h3>
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
 
       <div className="space-y-2 sm:space-y-3">
-        {deadlines.length === 0 ? (
+        {preview.length === 0 ? (
           <p className="text-sm text-emerald-600/60 text-center py-6">
             No deadlines yet. Add one below.
           </p>
         ) : (
+<<<<<<< HEAD
           visibleDeadlines.map((item, i) => {
             const { icon: Icon, label: categoryLabel } =
               getDeadlineCategoryMeta(item.icon);
+=======
+          preview.map((item, i) => {
+            const Icon =
+              iconMap[item.icon as keyof typeof iconMap] ?? FileText;
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
             return (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.05 + i * 0.04 }}
-                className="flex items-center gap-2 sm:gap-3 rounded-xl border border-emerald-50 bg-white/60 p-2.5 sm:p-3 hover:shadow-sm transition-all min-w-0"
+                className="group flex items-center gap-2 sm:gap-3 rounded-xl border border-emerald-50 bg-white/60 p-2.5 sm:p-3 hover:shadow-sm transition-all min-w-0"
               >
                 <div className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
                   <Icon className="size-4 sm:size-5" />
@@ -82,13 +130,44 @@ export function UpcomingDeadlines() {
                 </div>
                 <Badge
                   variant="outline"
-                  className="shrink-0 border-emerald-200 text-emerald-700 bg-emerald-50 text-[10px] sm:text-xs px-2"
+                  className="shrink-0 border-emerald-200 text-emerald-700 bg-emerald-50 text-[10px] sm:text-xs px-1.5 sm:px-2 hidden min-[380px]:inline-flex"
                 >
-                  {getDaysLeft(item.dueDateIso)}d left
+                  {getDaysLeft(item.dueDateIso)}d
                 </Badge>
+                <div className="flex gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => openEdit(item)}
+                    className="text-emerald-600 hover:bg-emerald-50 size-8"
+                    aria-label="Edit"
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => handleDelete(item)}
+                    className="text-red-500 hover:bg-red-50 size-8"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
               </motion.div>
             );
           })
+        )}
+        {deadlines.length > PREVIEW_COUNT && (
+          <button
+            type="button"
+            onClick={() => setViewAllOpen(true)}
+            className="w-full text-center text-xs text-emerald-600 hover:text-emerald-700 py-2 touch-manipulation"
+          >
+            +{deadlines.length - PREVIEW_COUNT} more — View all
+          </button>
         )}
       </div>
 
@@ -102,7 +181,10 @@ export function UpcomingDeadlines() {
       <Button
         type="button"
         variant="outline"
-        onClick={() => setDialogOpen(true)}
+        onClick={() => {
+          setEditing(null);
+          setAddOpen(true);
+        }}
         className="w-full mt-3 sm:mt-4 rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 gap-2 min-h-[44px] h-11 sm:h-10 text-sm sm:text-base touch-manipulation"
       >
         <Plus className="size-4 shrink-0" />
@@ -110,10 +192,22 @@ export function UpcomingDeadlines() {
       </Button>
 
       <DeadlineFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSave={addDeadline}
+        open={addOpen}
+        onOpenChange={(open) => {
+          setAddOpen(open);
+          if (!open) setEditing(null);
+        }}
+        deadline={editing}
+        onSave={(data) => {
+          if (editing) {
+            updateDeadline(editing.id, data);
+          } else {
+            addDeadline(data);
+          }
+        }}
       />
+
+      <DeadlinesViewAll open={viewAllOpen} onOpenChange={setViewAllOpen} />
     </motion.section>
   );
 }

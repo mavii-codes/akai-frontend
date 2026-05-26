@@ -9,6 +9,7 @@ export function saveAuthSession(session: AuthSession) {
   if (typeof window === "undefined") return;
   localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
   window.dispatchEvent(new Event("akai-auth-updated"));
+  window.dispatchEvent(new Event("akai-account-updated"));
 }
 
 export function loadAuthSession(): AuthSession | null {
@@ -28,6 +29,7 @@ export function clearAuthSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(AUTH_SESSION_KEY);
   window.dispatchEvent(new Event("akai-auth-updated"));
+  window.dispatchEvent(new Event("akai-account-updated"));
 }
 
 /** First part of email before @, e.g. "micco" from micco@gmail.com */

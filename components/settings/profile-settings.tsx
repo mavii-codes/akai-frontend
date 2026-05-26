@@ -27,6 +27,7 @@ export function ProfileSettings() {
     const loaded = loadProfile();
     setProfile(loaded);
     setSavedSnapshot(loaded);
+    setFileName(loaded.profileImage ? "profile-image" : "No file chosen");
   }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +50,9 @@ export function ProfileSettings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!profile.email.trim().includes("@")) return;
+
+    // Saves profile + syncs login session + notifies entire app
     saveProfile(profile);
 
     if (isApiSyncEnabled()) {
@@ -100,8 +104,8 @@ export function ProfileSettings() {
       </div>
 
       <p className="text-sm text-emerald-800/75 mb-6 sm:mb-8 leading-relaxed">
-        Update your profile details and choose a profile image. Changes are saved
-        locally in your browser.
+        Update your profile details and choose a profile image. When you save,
+        your name and email update everywhere in the app automatically.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
@@ -161,6 +165,7 @@ export function ProfileSettings() {
               onChange={handleChange}
               placeholder="Jane Doe"
               className="h-11 rounded-lg border-emerald-200/80 bg-white shadow-sm"
+              required
             />
           </div>
 
@@ -176,6 +181,7 @@ export function ProfileSettings() {
               onChange={handleChange}
               placeholder="jane@study.com"
               className="h-11 rounded-lg border-emerald-200/80 bg-white shadow-sm"
+              required
             />
           </div>
 
@@ -217,12 +223,12 @@ export function ProfileSettings() {
                 animate={{ opacity: 1 }}
                 className="text-sm text-emerald-600 font-medium"
               >
-                Saved!
+                Account updated!
               </motion.span>
             )}
           </div>
           <p className="text-xs text-emerald-700/50 sm:text-right shrink-0">
-            Your profile data is stored in your browser.
+            Updates sidebar, home greeting, and your saved profile.
           </p>
         </div>
       </form>

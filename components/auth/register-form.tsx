@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { ApiError, registerUser } from "@/lib/api";
 import { saveAuthSession } from "@/lib/auth-session";
 import { loadProfile, saveProfile } from "@/lib/profile-storage";
+import { initializeNewUserData } from "@/lib/user-data-storage";
 
 function getPasswordStrength(password: string) {
   let score = 0;
@@ -58,6 +59,7 @@ export function RegisterForm() {
     if (!isValid) return;
 
     const trimmedEmail = email.trim().toLowerCase();
+<<<<<<< HEAD
     setError("");
     setLoading(true);
     try {
@@ -68,6 +70,21 @@ export function RegisterForm() {
       });
 
       saveAuthSession({ email: user.email, name: user.name ?? name.trim() });
+=======
+    const trimmedName = name.trim();
+
+    saveAuthSession({ email: trimmedEmail, name: trimmedName });
+
+    // New account starts with empty tasks and planner
+    initializeNewUserData(trimmedEmail);
+
+    saveProfile({
+      name: trimmedName,
+      email: trimmedEmail,
+      about: "",
+      profileImage: "",
+    });
+>>>>>>> 7df49d51b88c1ce928757f2d94ca5b3506f8db59
 
       const profile = loadProfile();
       saveProfile({
