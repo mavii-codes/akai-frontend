@@ -9,8 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { apiFetch } from "@/lib/api";
 import { upcomingDeadlines as initialDeadlines } from "@/lib/data";
 import { generateId } from "@/lib/id";
+import { isApiSyncEnabled } from "@/lib/use-api-sync";
 import type { Deadline } from "@/types";
 
 const DEADLINES_STORAGE_KEY = "akai-deadlines";
@@ -34,7 +36,7 @@ function normalizeDeadline(d: Deadline & { dueDate?: string; daysLeft?: number }
     id: d.id,
     title: d.title,
     dueDateIso: new Date().toISOString().split("T")[0],
-    icon: d.icon ?? "file-text",
+    icon: d.icon ?? "assignment",
   };
 }
 
@@ -73,22 +75,59 @@ export function DeadlinesProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setDeadlines(loadDeadlinesFromStorage());
-    setHydrated(true);
+    let cancelled = false;
+
+    async function load() {
+      if (isApiSyncEnabled()) {
+        try {
+          const { deadlines: remote } = await apiFetch<{ deadlines: Deadline[] }>(
+            "/api/deadlines"
+          );
+          if (!cancelled) setDeadlines(remote.map(normalizeDeadline));
+        } catch {
+          if (!cancelled) setDeadlines(loadDeadlinesFromStorage());
+        }
+      } else {
+        setDeadlines(loadDeadlinesFromStorage());
+      }
+      if (!cancelled) setHydrated(true);
+    }
+
+    load();
+    const onAuth = () => load();
+    window.addEventListener("akai-auth-updated", onAuth);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("akai-auth-updated", onAuth);
+    };
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || isApiSyncEnabled()) return;
     localStorage.setItem(DEADLINES_STORAGE_KEY, JSON.stringify(deadlines));
   }, [deadlines, hydrated]);
 
   const addDeadline = useCallback((input: DeadlineInput) => {
+    if (isApiSyncEnabled()) {
+      void apiFetch<{ deadline: Deadline }>("/api/deadlines", {
+        method: "POST",
+        body: JSON.stringify({
+          title: input.title.trim(),
+          dueDateIso: input.dueDate,
+          icon: input.icon ?? "assignment",
+        }),
+      }).then(({ deadline }) => {
+        setDeadlines((prev) => [normalizeDeadline(deadline), ...prev]);
+      });
+      return;
+    }
+
     setDeadlines((prev) => [
       {
         id: generateId(),
         title: input.title.trim(),
         dueDateIso: input.dueDate,
-        icon: input.icon ?? "file-text",
+        icon: input.icon ?? "assignment",
       },
       ...prev,
     ]);
@@ -96,6 +135,9 @@ export function DeadlinesProvider({ children }: { children: ReactNode }) {
 
   const deleteDeadline = useCallback((id: string) => {
     setDeadlines((prev) => prev.filter((d) => d.id !== id));
+    if (isApiSyncEnabled()) {
+      void apiFetch(`/api/deadlines/${id}`, { method: "DELETE" });
+    }
   }, []);
 
   const sorted = useMemo(() => {

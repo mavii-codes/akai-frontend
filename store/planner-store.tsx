@@ -9,8 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { apiFetch } from "@/lib/api";
 import { plannerBlocks as initialSchedules } from "@/lib/data";
 import { generateId } from "@/lib/id";
+import { isApiSyncEnabled } from "@/lib/use-api-sync";
 import type { PlannerBlock } from "@/types";
 
 const SCHEDULES_STORAGE_KEY = "akai-schedules";
@@ -43,30 +45,69 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setSchedules(loadSchedulesFromStorage());
-    setHydrated(true);
+    let cancelled = false;
+
+    async function load() {
+      if (isApiSyncEnabled()) {
+        try {
+          const { blocks } = await apiFetch<{ blocks: PlannerBlock[] }>(
+            "/api/planner"
+          );
+          if (!cancelled) setSchedules(blocks);
+        } catch {
+          if (!cancelled) setSchedules(loadSchedulesFromStorage());
+        }
+      } else {
+        setSchedules(loadSchedulesFromStorage());
+      }
+      if (!cancelled) setHydrated(true);
+    }
+
+    load();
+    const onAuth = () => load();
+    window.addEventListener("akai-auth-updated", onAuth);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("akai-auth-updated", onAuth);
+    };
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || isApiSyncEnabled()) return;
     localStorage.setItem(SCHEDULES_STORAGE_KEY, JSON.stringify(schedules));
   }, [schedules, hydrated]);
 
   const addSchedule = useCallback((schedule: ScheduleInput) => {
-    setSchedules((prev) => [
-      ...prev,
-      { ...schedule, id: generateId() },
-    ]);
+    if (isApiSyncEnabled()) {
+      void apiFetch<{ block: PlannerBlock }>("/api/planner", {
+        method: "POST",
+        body: JSON.stringify(schedule),
+      }).then(({ block }) => {
+        setSchedules((prev) => [...prev, block]);
+      });
+      return;
+    }
+
+    setSchedules((prev) => [...prev, { ...schedule, id: generateId() }]);
   }, []);
 
   const updateSchedule = useCallback((id: string, updates: Partial<PlannerBlock>) => {
     setSchedules((prev) =>
       prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
     );
+    if (isApiSyncEnabled()) {
+      void apiFetch(`/api/planner/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      });
+    }
   }, []);
 
   const deleteSchedule = useCallback((id: string) => {
     setSchedules((prev) => prev.filter((s) => s.id !== id));
+    if (isApiSyncEnabled()) {
+      void apiFetch(`/api/planner/${id}`, { method: "DELETE" });
+    }
   }, []);
 
   const value = useMemo(

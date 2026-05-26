@@ -9,8 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { apiFetch } from "@/lib/api";
 import { initialTasks } from "@/lib/data";
 import { generateId } from "@/lib/id";
+import { isApiSyncEnabled } from "@/lib/use-api-sync";
 import type { Priority, Task } from "@/types";
 
 const TASKS_STORAGE_KEY = "akai-tasks";
@@ -42,17 +44,50 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setTasks(loadTasksFromStorage());
-    setHydrated(true);
+    let cancelled = false;
+
+    async function load() {
+      if (isApiSyncEnabled()) {
+        try {
+          const { tasks: remote } = await apiFetch<{ tasks: Task[] }>(
+            "/api/tasks"
+          );
+          if (!cancelled) setTasks(remote);
+        } catch {
+          if (!cancelled) setTasks(loadTasksFromStorage());
+        }
+      } else {
+        setTasks(loadTasksFromStorage());
+      }
+      if (!cancelled) setHydrated(true);
+    }
+
+    load();
+    const onAuth = () => load();
+    window.addEventListener("akai-auth-updated", onAuth);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("akai-auth-updated", onAuth);
+    };
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || isApiSyncEnabled()) return;
     localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks, hydrated]);
 
   const addTask = useCallback(
     (task: Omit<Task, "id" | "createdAt" | "completed">) => {
+      if (isApiSyncEnabled()) {
+        void apiFetch<{ task: Task }>("/api/tasks", {
+          method: "POST",
+          body: JSON.stringify(task),
+        }).then(({ task: created }) => {
+          setTasks((prev) => [created, ...prev]);
+        });
+        return;
+      }
+
       setTasks((prev) => [
         {
           ...task,
@@ -70,15 +105,34 @@ export function TasksProvider({ children }: { children: ReactNode }) {
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
     );
+    if (isApiSyncEnabled()) {
+      void apiFetch(`/api/tasks/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      });
+    }
   }, []);
 
   const deleteTask = useCallback((id: string) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
+    if (isApiSyncEnabled()) {
+      void apiFetch(`/api/tasks/${id}`, { method: "DELETE" });
+    }
   }, []);
 
   const toggleComplete = useCallback((id: string) => {
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const completed = !t.completed;
+        if (isApiSyncEnabled()) {
+          void apiFetch(`/api/tasks/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ completed }),
+          });
+        }
+        return { ...t, completed };
+      })
     );
   }, []);
 

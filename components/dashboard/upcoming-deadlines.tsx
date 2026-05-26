@@ -2,33 +2,28 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Calculator,
-  Microscope,
-  FileText,
-  BookOpen,
-  Plus,
-  ChevronRight,
-} from "lucide-react";
+import { Plus, ChevronRight } from "lucide-react";
 import {
   useDeadlines,
   getDaysLeft,
   formatDeadlineDate,
 } from "@/store/deadlines-store";
+import { getDeadlineCategoryMeta } from "@/lib/deadline-categories";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeadlineFormDialog } from "@/components/dashboard/deadline-form-dialog";
 
-const iconMap = {
-  calculator: Calculator,
-  microscope: Microscope,
-  "file-text": FileText,
-  book: BookOpen,
-};
+const PREVIEW_COUNT = 3;
 
 export function UpcomingDeadlines() {
   const { deadlines, addDeadline } = useDeadlines();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
+  const hasMore = deadlines.length > PREVIEW_COUNT;
+  const visibleDeadlines = showAll
+    ? deadlines
+    : deadlines.slice(0, PREVIEW_COUNT);
 
   return (
     <motion.section
@@ -41,13 +36,20 @@ export function UpcomingDeadlines() {
         <h3 className="font-semibold text-emerald-900 text-base sm:text-lg">
           Upcoming Deadlines
         </h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full sm:w-auto justify-center sm:justify-start text-emerald-600 hover:text-emerald-700 gap-1 h-9 rounded-xl"
-        >
-          View All <ChevronRight className="size-4 shrink-0" />
-        </Button>
+        {hasMore ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAll((v) => !v)}
+            className="w-full sm:w-auto justify-center sm:justify-start text-emerald-600 hover:text-emerald-700 gap-1 h-9 rounded-xl"
+          >
+            {showAll ? "Show Less" : "View All"}
+            <ChevronRight
+              className={`size-4 shrink-0 transition-transform ${showAll ? "rotate-90" : ""}`}
+            />
+          </Button>
+        ) : null}
       </div>
 
       <div className="space-y-2 sm:space-y-3">
@@ -56,9 +58,9 @@ export function UpcomingDeadlines() {
             No deadlines yet. Add one below.
           </p>
         ) : (
-          deadlines.map((item, i) => {
-            const Icon =
-              iconMap[item.icon as keyof typeof iconMap] ?? FileText;
+          visibleDeadlines.map((item, i) => {
+            const { icon: Icon, label: categoryLabel } =
+              getDeadlineCategoryMeta(item.icon);
             return (
               <motion.div
                 key={item.id}
@@ -75,7 +77,7 @@ export function UpcomingDeadlines() {
                     {item.title}
                   </p>
                   <p className="text-[10px] sm:text-xs text-emerald-600/70 truncate">
-                    {formatDeadlineDate(item.dueDateIso)}
+                    {categoryLabel} · {formatDeadlineDate(item.dueDateIso)}
                   </p>
                 </div>
                 <Badge
@@ -89,6 +91,13 @@ export function UpcomingDeadlines() {
           })
         )}
       </div>
+
+      {!showAll && hasMore ? (
+        <p className="text-xs text-emerald-600/60 text-center mt-2">
+          +{deadlines.length - PREVIEW_COUNT} more deadline
+          {deadlines.length - PREVIEW_COUNT === 1 ? "" : "s"}
+        </p>
+      ) : null}
 
       <Button
         type="button"

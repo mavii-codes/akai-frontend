@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { AuthDecorations } from "./auth-decorations";
 import { cn } from "@/lib/utils";
+import { ApiError, registerUser } from "@/lib/api";
 import { saveAuthSession } from "@/lib/auth-session";
 import { loadProfile, saveProfile } from "@/lib/profile-storage";
 
@@ -41,6 +42,8 @@ export function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const strength = useMemo(() => getPasswordStrength(password), [password]);
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
@@ -50,21 +53,40 @@ export function RegisterForm() {
     strength >= 50 &&
     passwordsMatch;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
 
     const trimmedEmail = email.trim().toLowerCase();
-    saveAuthSession({ email: trimmedEmail, name: name.trim() });
+    setError("");
+    setLoading(true);
+    try {
+      const { user } = await registerUser({
+        email: trimmedEmail,
+        password,
+        name: name.trim(),
+      });
 
-    const profile = loadProfile();
-    saveProfile({
-      ...profile,
-      name: name.trim(),
-      email: trimmedEmail,
-    });
+      saveAuthSession({ email: user.email, name: user.name ?? name.trim() });
 
-    router.push("/home");
+      const profile = loadProfile();
+      saveProfile({
+        ...profile,
+        name: user.name ?? name.trim(),
+        email: user.email,
+        about: user.about || profile.about,
+      });
+
+      router.push("/home");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not create account. Try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -206,12 +228,16 @@ export function RegisterForm() {
               )}
             </div>
 
+            {error ? (
+              <p className="text-sm text-red-600 text-center">{error}</p>
+            ) : null}
+
             <Button
               type="submit"
-              disabled={!isValid}
+              disabled={!isValid || loading}
               className="w-full h-12 rounded-xl text-base font-semibold gradient-green border-0 shadow-lg shadow-emerald-200/50 hover:opacity-95 disabled:opacity-50 mt-2"
             >
-              Create Account
+              {loading ? "Creating account…" : "Create Account"}
             </Button>
           </form>
 

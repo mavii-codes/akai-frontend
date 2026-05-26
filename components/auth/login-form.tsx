@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { AuthDecorations } from "./auth-decorations";
+import { ApiError, loginUser } from "@/lib/api";
 import { saveAuthSession } from "@/lib/auth-session";
 import { loadProfile, saveProfile } from "@/lib/profile-storage";
 
@@ -20,18 +21,44 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail.includes("@")) return;
 
-    saveAuthSession({ email: trimmedEmail });
+    setError("");
+    setLoading(true);
+    try {
+      const { user } = await loginUser({
+        email: trimmedEmail,
+        password,
+      });
 
-    const profile = loadProfile();
-    saveProfile({ ...profile, email: trimmedEmail });
+      saveAuthSession({
+        email: user.email,
+        name: user.name ?? undefined,
+      });
 
-    router.push("/home");
+      const profile = loadProfile();
+      saveProfile({
+        ...profile,
+        email: user.email,
+        name: user.name ?? profile.name,
+        about: user.about || profile.about,
+        profileImage: user.profileImage ?? profile.profileImage,
+      });
+
+      router.push("/home");
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Could not sign in. Try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -110,11 +137,16 @@ export function LoginForm() {
               </Label>
             </div>
 
+            {error ? (
+              <p className="text-sm text-red-600 text-center">{error}</p>
+            ) : null}
+
             <Button
               type="submit"
+              disabled={loading}
               className="w-full h-12 rounded-xl text-base font-semibold gradient-green border-0 shadow-lg shadow-emerald-200/50 hover:opacity-95 transition-opacity"
             >
-              Log In
+              {loading ? "Signing in…" : "Log In"}
             </Button>
           </form>
 

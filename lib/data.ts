@@ -49,19 +49,19 @@ export const upcomingDeadlines: Deadline[] = [
     id: "1",
     title: "Math Exam",
     dueDateIso: daysFromNow(2),
-    icon: "calculator",
+    icon: "assignment",
   },
   {
     id: "2",
     title: "Biology Quiz",
     dueDateIso: daysFromNow(4),
-    icon: "microscope",
+    icon: "performance-task",
   },
   {
     id: "3",
     title: "Research Paper",
     dueDateIso: daysFromNow(9),
-    icon: "file-text",
+    icon: "report",
   },
 ];
 

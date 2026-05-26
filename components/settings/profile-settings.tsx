@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { apiFetch } from "@/lib/api";
+import { isApiSyncEnabled } from "@/lib/use-api-sync";
 import {
   defaultProfile,
   loadProfile,
@@ -45,9 +47,25 @@ export function ProfileSettings() {
     setProfile((p) => ({ ...p, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     saveProfile(profile);
+
+    if (isApiSyncEnabled()) {
+      try {
+        await apiFetch("/api/users/me", {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: profile.name,
+            about: profile.about,
+            profileImage: profile.profileImage || null,
+          }),
+        });
+      } catch {
+        /* keep local save even if API fails */
+      }
+    }
+
     setSavedSnapshot(profile);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
