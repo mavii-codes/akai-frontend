@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DeadlineInput } from "@/store/deadlines-store";
+import type { Deadline } from "@/types";
 import { cn } from "@/lib/utils";
 
 const ICON_OPTIONS = [
@@ -23,28 +24,33 @@ const ICON_OPTIONS = [
 type DeadlineFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  deadline?: Deadline | null;
   onSave: (data: DeadlineInput) => void;
 };
 
 export function DeadlineFormDialog({
   open,
   onOpenChange,
+  deadline,
   onSave,
 }: DeadlineFormDialogProps) {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [icon, setIcon] = useState("file-text");
+  const isEdit = Boolean(deadline);
 
   useEffect(() => {
-    if (open && !title) {
-      setDueDate(new Date().toISOString().split("T")[0]);
-    }
-    if (!open) {
+    if (!open) return;
+    if (deadline) {
+      setTitle(deadline.title);
+      setDueDate(deadline.dueDateIso);
+      setIcon(deadline.icon ?? "file-text");
+    } else {
       setTitle("");
       setDueDate(new Date().toISOString().split("T")[0]);
       setIcon("file-text");
     }
-  }, [open, title]);
+  }, [open, deadline]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +63,9 @@ export function DeadlineFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-2xl border-emerald-100 w-[min(100vw-1.5rem,28rem)] max-w-md mx-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-emerald-900 text-lg">Add Deadline</DialogTitle>
+          <DialogTitle className="text-emerald-900 text-lg">
+            {isEdit ? "Edit Deadline" : "Add Deadline"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -84,7 +92,7 @@ export function DeadlineFormDialog({
           </div>
           <div className="space-y-2">
             <Label>Category</Label>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <div className="grid grid-cols-2 gap-2">
               {ICON_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -106,7 +114,7 @@ export function DeadlineFormDialog({
             type="submit"
             className="w-full h-11 rounded-xl gradient-green border-0 text-base"
           >
-            Add Deadline
+            {isEdit ? "Save Changes" : "Add Deadline"}
           </Button>
         </form>
       </DialogContent>

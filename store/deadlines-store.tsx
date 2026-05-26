@@ -63,6 +63,7 @@ export type DeadlineInput = {
 type DeadlinesContextValue = {
   deadlines: Deadline[];
   addDeadline: (input: DeadlineInput) => void;
+  updateDeadline: (id: string, input: DeadlineInput) => void;
   deleteDeadline: (id: string) => void;
 };
 
@@ -94,6 +95,21 @@ export function DeadlinesProvider({ children }: { children: ReactNode }) {
     ]);
   }, []);
 
+  const updateDeadline = useCallback((id: string, input: DeadlineInput) => {
+    setDeadlines((prev) =>
+      prev.map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              title: input.title.trim(),
+              dueDateIso: input.dueDate,
+              icon: input.icon ?? d.icon,
+            }
+          : d
+      )
+    );
+  }, []);
+
   const deleteDeadline = useCallback((id: string) => {
     setDeadlines((prev) => prev.filter((d) => d.id !== id));
   }, []);
@@ -108,9 +124,10 @@ export function DeadlinesProvider({ children }: { children: ReactNode }) {
     () => ({
       deadlines: sorted,
       addDeadline,
+      updateDeadline,
       deleteDeadline,
     }),
-    [sorted, addDeadline, deleteDeadline]
+    [sorted, addDeadline, updateDeadline, deleteDeadline]
   );
 
   return (

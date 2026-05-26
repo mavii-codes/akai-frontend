@@ -3,23 +3,11 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuthUser } from "@/hooks/use-auth-user";
-import { getEmailInitial } from "@/lib/auth-session";
-import { loadProfile } from "@/lib/profile-storage";
-import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function SidebarUserCard() {
-  const { email, ready, isLoggedIn } = useAuthUser();
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
-
-  useEffect(() => {
-    const profile = loadProfile();
-    setAvatarUrl(profile.profileImage || undefined);
-    const onProfileUpdate = () => {
-      setAvatarUrl(loadProfile().profileImage || undefined);
-    };
-    window.addEventListener("akai-profile-updated", onProfileUpdate);
-    return () => window.removeEventListener("akai-profile-updated", onProfileUpdate);
-  }, []);
+  const { email, displayName, avatarUrl, avatarInitial, ready, isLoggedIn } =
+    useAuthUser();
 
   if (!ready) {
     return (
@@ -27,39 +15,43 @@ export function SidebarUserCard() {
     );
   }
 
-  const initial = email ? getEmailInitial(email) : "S";
-  const primaryText = isLoggedIn ? email : "Guest";
+  const greeting = isLoggedIn ? displayName : "Student";
 
   return (
-    <Link href="/settings">
+    <Link href="/settings" className="block min-w-0">
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="mx-1 mb-3 flex items-center gap-3 rounded-2xl border border-emerald-100/80 bg-white p-3.5 shadow-sm shadow-emerald-100/50 transition-shadow hover:shadow-md"
+        className="mx-1 mb-3 flex items-center gap-2.5 sm:gap-3 rounded-2xl border border-emerald-100/80 bg-white p-3 sm:p-3.5 shadow-sm shadow-emerald-100/50 transition-shadow hover:shadow-md min-w-0"
       >
-        <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-emerald-700">
+        <div className="flex size-10 sm:size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-emerald-700">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt="" className="size-full object-cover" />
           ) : (
-            <span className="text-base font-bold">{initial}</span>
+            <span className="text-sm sm:text-base font-bold">{avatarInitial}</span>
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-emerald-950" title={primaryText}>
-            {isLoggedIn ? (
-              <>
-                Hello,{" "}
-                <span className="text-emerald-700">{primaryText}</span>
-              </>
-            ) : (
-              "Hello, Student!"
-            )}
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <p
+            className="text-[13px] sm:text-sm font-bold text-emerald-950 leading-snug"
+            title={isLoggedIn ? `Hello, ${greeting}!` : undefined}
+          >
+            <span className="text-emerald-800/90">Hello, </span>
+            <span
+              className={cn(
+                "text-emerald-700 break-words",
+                "line-clamp-2 sm:line-clamp-1 sm:truncate sm:block"
+              )}
+            >
+              {greeting}!
+            </span>
           </p>
-          <p className="truncate text-xs text-emerald-700/55 leading-snug mt-0.5">
-            {isLoggedIn
-              ? "Keep going, you're doing great! :)"
-              : "Log in to personalize"}
+          <p
+            className="truncate text-[11px] sm:text-xs text-emerald-700/55 leading-snug mt-0.5"
+            title={email ?? undefined}
+          >
+            {isLoggedIn && email ? email : "Log in to personalize"}
           </p>
         </div>
       </motion.div>
