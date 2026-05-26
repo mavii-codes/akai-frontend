@@ -14,6 +14,7 @@ import { AuthDecorations } from "./auth-decorations";
 import { cn } from "@/lib/utils";
 import { saveAuthSession } from "@/lib/auth-session";
 import { loadProfile, saveProfile } from "@/lib/profile-storage";
+import { initializeNewUserData } from "@/lib/user-data-storage";
 
 function getPasswordStrength(password: string) {
   let score = 0;
@@ -55,13 +56,18 @@ export function RegisterForm() {
     if (!isValid) return;
 
     const trimmedEmail = email.trim().toLowerCase();
-    saveAuthSession({ email: trimmedEmail, name: name.trim() });
+    const trimmedName = name.trim();
 
-    const profile = loadProfile();
+    saveAuthSession({ email: trimmedEmail, name: trimmedName });
+
+    // New account starts with empty tasks and planner
+    initializeNewUserData(trimmedEmail);
+
     saveProfile({
-      ...profile,
-      name: name.trim(),
+      name: trimmedName,
       email: trimmedEmail,
+      about: "",
+      profileImage: "",
     });
 
     router.push("/home");
