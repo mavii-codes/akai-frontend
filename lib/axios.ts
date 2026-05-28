@@ -4,10 +4,27 @@ const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const axiosInstance = axios.create({
   baseURL: backendURL,
-  withCredentials: true, // Crucial for HTTP-only cookies
+  withCredentials: true,
   headers: {
-    "Content-Type": "application/json",
+    Accept: "application/json",
   },
+});
+
+axiosInstance.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    if (config.headers) {
+      delete (config.headers as Record<string, unknown>["Content-Type"]);
+      delete (config.headers as Record<string, unknown>["content-type"]);
+    }
+    return config;
+  }
+
+  config.headers = {
+    ...(config.headers ?? {}),
+    "Content-Type": "application/json",
+  };
+
+  return config;
 });
 
 // --- Token Rotation State ---

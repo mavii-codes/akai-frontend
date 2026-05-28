@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Lightbulb } from "lucide-react";
+import { Sparkles, Lightbulb, Bot, Plus } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { NotificationsMenu } from "@/components/layout/notifications-menu";
 import { PageUserChip } from "@/components/layout/page-user-chip";
@@ -18,93 +19,104 @@ import {
   ChatRecentConversations,
   type ConversationPreview,
 } from "@/components/ai/chat-recent-conversations";
-import {
-  buildDemoReply,
-  DEFAULT_FOLLOW_UPS,
-  RECENT_CONVERSATIONS_SEED,
-} from "@/lib/ai-demo";
+
 import { aiSuggestedPrompts } from "@/lib/data";
 import type { ChatMessage } from "@/types";
-import { Bot } from "lucide-react";
+import axiosInstance from "@/lib/axios";
 
-const DEMO_USER_PROMPT = "Can you explain photosynthesis in simple terms?";
+const DEFAULT_FOLLOW_UPS = [
+  "Explain this more simply",
+  "Give me an example",
+  "Create a short quiz",
+];
 
 export function AiAssistantView() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [conversations, setConversations] = useState<ConversationPreview[]>(
-    RECENT_CONVERSATIONS_SEED
-  );
-  const [showTips, setShowTips] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const seeded = useRef(false);
 
-  useEffect(() => {
-    if (seeded.current || messages.length > 0) return;
-    seeded.current = true;
-    setMessages([
-      {
-        id: "demo-user",
-        role: "user",
-        content: DEMO_USER_PROMPT,
-        timestamp: new Date(),
-      },
-      {
-        id: "demo-ai",
-        role: "assistant",
-        content: buildDemoReply(DEMO_USER_PROMPT),
-        timestamp: new Date(),
-      },
-    ]);
-  }, [messages.length]);
+  const [conversations, setConversations] = useState<ConversationPreview[]>([]);
+  const [showTips, setShowTips] = useState(false);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
   const addToRecent = useCallback((title: string) => {
-    const short =
-      title.length > 42 ? `${title.slice(0, 42)}…` : title;
+    const short = title.length > 42 ? `${title.slice(0, 42)}…` : title;
+
     setConversations((prev) => {
       const next = [
         { id: crypto.randomUUID(), title: short, ago: "Just now" },
         ...prev.filter((c) => c.title !== short),
       ].slice(0, 5);
+
       return next;
     });
   }, []);
 
   const sendMessage = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || isTyping) return;
 
+      if ((!trimmed && !selectedFile) || isTyping) return;
+
+      const userText = trimmed || selectedFile?.name || "";
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "user",
-        content: trimmed,
+        content: userText,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
-      addToRecent(trimmed);
+      addToRecent(userText);
       setIsTyping(true);
 
-      setTimeout(() => {
-        setIsTyping(false);
+      try {
+        const formData = new FormData();
+        formData.append("question", trimmed || "Please analyze the attached file.");
+
+        if (selectedFile) {
+          formData.append("file", selectedFile, selectedFile.name);
+        }
+
+        const response = await axiosInstance.post("/api/ai/v1/ask", formData);
+
+        const aiReply =
+          response.data.data.answer || "No response received.";
+
+        const assistantMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: aiReply,
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+        setSelectedFile(null);
+      } catch (error) {
+        console.error(error);
+
         setMessages((prev) => [
           ...prev,
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: buildDemoReply(trimmed),
+            content: "Sorry, something went wrong while contacting AkAi.",
             timestamp: new Date(),
           },
         ]);
-      }, 1200);
+      } finally {
+        setIsTyping(false);
+      }
     },
-    [isTyping, addToRecent]
+    [isTyping, addToRecent, selectedFile]
   );
 
   const handleQuickPrompt = (prefix: string) => {
@@ -112,9 +124,7 @@ export function AiAssistantView() {
     document.getElementById("ai-chat-input")?.focus();
   };
 
-  const lastAssistantId = [...messages]
-    .reverse()
-    .find((m) => m.role === "assistant")?.id;
+  const lastAssistantId = [...messages].reverse().find((m) => m.role === "assistant")?.id;
 
   const studyTips = [
     "Break study sessions into 25-minute focus blocks",
@@ -139,6 +149,7 @@ export function AiAssistantView() {
             Your intelligent study companion. Ask anything!
           </p>
         </div>
+
         <PageHeaderActions>
           <div className="relative w-full sm:w-auto">
             <Button
@@ -149,6 +160,7 @@ export function AiAssistantView() {
               <Lightbulb className="h-4 w-4 shrink-0" />
               Study Tips
             </Button>
+
             {showTips && (
               <div className="absolute left-0 right-0 sm:left-auto sm:right-0 top-full mt-2 z-20 w-full sm:w-64 rounded-xl border border-emerald-100 bg-white shadow-lg p-3 text-sm text-emerald-800 space-y-2">
                 {studyTips.map((tip) => (
@@ -160,6 +172,7 @@ export function AiAssistantView() {
               </div>
             )}
           </div>
+
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto min-w-0">
             <NotificationsMenu align="end" />
             <PageUserChip className="min-w-0 flex-1 sm:flex-initial max-w-full" />
@@ -168,9 +181,10 @@ export function AiAssistantView() {
       </motion.header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 min-w-0 flex flex-col glass rounded-2xl border border-emerald-100/60 shadow-sm overflow-hidden min-h-[min(720px,calc(100vh-11rem))]">
+        <div className="xl:col-span-2 flex flex-col glass rounded-2xl border border-emerald-100/60 shadow-sm overflow-hidden min-h-[720px]">
           <ScrollArea className="flex-1 px-4 sm:px-5 pt-5">
             <AiWelcomeCard />
+
             <div className="space-y-6 pb-4">
               {messages.map((msg) =>
                 msg.role === "user" ? (
@@ -179,32 +193,26 @@ export function AiAssistantView() {
                   <ChatAssistantMessage
                     key={msg.id}
                     content={msg.content}
-                    followUps={
-                      msg.id === lastAssistantId ? DEFAULT_FOLLOW_UPS : []
-                    }
-                    onFollowUp={(chip) =>
-                      sendMessage(`${chip} — regarding my last question`)
-                    }
+                    followUps={msg.id === lastAssistantId ? DEFAULT_FOLLOW_UPS : []}
+                    onFollowUp={(chip) => sendMessage(`${chip} — regarding my last question`)}
                     showActions
                   />
                 )
               )}
+
               {isTyping && (
                 <div className="flex gap-3 pb-2">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                     <Bot className="h-4 w-4" />
                   </div>
+
                   <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3">
                     <div className="flex gap-1">
                       {[0, 1, 2].map((i) => (
                         <motion.span
                           key={i}
                           animate={{ y: [0, -4, 0] }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: Infinity,
-                            delay: i * 0.15,
-                          }}
+                          transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
                           className="h-2 w-2 rounded-full bg-emerald-400"
                         />
                       ))}
@@ -212,13 +220,12 @@ export function AiAssistantView() {
                   </div>
                 </div>
               )}
+
               <div ref={scrollRef} />
             </div>
           </ScrollArea>
 
-          {!messages.some(
-            (m) => m.role === "user" && !m.id.startsWith("demo")
-          ) && (
+          {!messages.some((m) => m.role === "user") && (
             <div className="px-4 pb-2 flex flex-wrap gap-2">
               {aiSuggestedPrompts.slice(0, 3).map((prompt) => (
                 <button
@@ -233,15 +240,24 @@ export function AiAssistantView() {
             </div>
           )}
 
-          <ChatInputArea
-            value={input}
-            onChange={setInput}
-            onSend={() => sendMessage(input)}
-            disabled={isTyping}
-          />
+          <div className="border-t border-emerald-100 p-3">
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <ChatInputArea
+                  value={input}
+                  onChange={setInput}
+                  onSend={() => sendMessage(input)}
+                  disabled={isTyping}
+                  selectedFile={selectedFile}
+                  onFileSelect={setSelectedFile}
+                  onRemoveFile={() => setSelectedFile(null)}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <aside className="space-y-5 min-w-0 w-full overflow-hidden">
+        <aside className="space-y-5">
           <ChatQuickActions onSelect={handleQuickPrompt} />
           <ChatStudyTools onSelect={handleQuickPrompt} />
           <ChatRecentConversations
