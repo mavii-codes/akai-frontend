@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { AuthDecorations } from "./auth-decorations";
 import { saveAuthSession } from "@/lib/auth-session";
 import { loadProfile, saveProfile } from "@/lib/profile-storage";
+import { authService } from "@/services/auth.service";
 
 export function LoginForm() {
   const router = useRouter();
@@ -31,7 +32,17 @@ export function LoginForm() {
     const profile = loadProfile();
     saveProfile({ ...profile, email: trimmedEmail });
 
-    router.push("/home");
+    try {
+          const response = authService.login({
+            email: trimmedEmail,
+            password,
+          });
+          console.log("Login successful:", response);
+          router.push("/register");
+        } catch (error) {
+          console.error("Registration failed:", error);
+        } 
+        router.push("/home");
   };
 
   return (
