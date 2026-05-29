@@ -7,10 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDateRange } from "@/lib/planner-utils";
-import { buildWeeklyPlanFromSubjects } from "@/lib/generate-plan";
-import { usePlanner } from "@/store/planner-store";
-import { useSubjects } from "@/store/subjects-store";
 import { cn } from "@/lib/utils";
+import axiosInstance from "@/lib/axios";
 
 const HOUR_OPTIONS = [2, 3, 4, 5, 6, 7, 8];
 const MODE_OPTIONS = [
@@ -21,12 +19,12 @@ const MODE_OPTIONS = [
 
 type CreateStudyPlanProps = {
   onGenerated?: () => void;
+  onPlanGenerated?: (plan: unknown) => void;
   className?: string;
 };
 
-export function CreateStudyPlan({ onGenerated, className }: CreateStudyPlanProps) {
-  const { replaceSchedules } = usePlanner();
-  const { subjects } = useSubjects();
+export function CreateStudyPlan({ onGenerated, onPlanGenerated, className }: CreateStudyPlanProps) {
+  const [studyPlan, setStudyPlan] = useState<unknown>(null);
   const [dailyHours, setDailyHours] = useState(6);
   const [studyMode, setStudyMode] = useState("balanced");
   const [periodStart, setPeriodStart] = useState(() => {
@@ -53,20 +51,61 @@ export function CreateStudyPlan({ onGenerated, className }: CreateStudyPlanProps
     return formatDateRange(start, end);
   }, [periodStart, periodEnd]);
 
-  const handleGenerate = () => {
-    if (subjects.length === 0) {
-      window.alert("Add at least one subject before generating your plan.");
-      return;
-    }
-    const hours =
-      studyMode === "intensive"
-        ? Math.min(8, dailyHours + 1)
-        : studyMode === "light"
-          ? Math.max(2, dailyHours - 1)
-          : dailyHours;
-    replaceSchedules(buildWeeklyPlanFromSubjects(subjects, hours));
+  const handleGenerate = async () => {
+  try {
+
+    // Fetch subjects
+    const subjectsResponse = await axiosInstance.get(
+      "/api/subjects/v1/get"
+    );
+
+    const nextSubjects = Array.isArray(
+      subjectsResponse.data?.data
+    )
+      ? subjectsResponse.data.data
+      : [];
+
+    // Send payload
+    const payload = {
+      subjects: nextSubjects,
+      beginDate: periodStart,
+      endDate: periodEnd,
+      dailyHours,
+      studyMode,
+    };
+
+    const response = await axiosInstance.post(
+      "/api/ai/v1/study-plan",
+      payload
+    );
+
+    const weekPlan = response.data?.data?.studyPlan?.weekPlan ?? [];
+    console.log("Generated week plan:", weekPlan);
+
+    await axiosInstance.post("/api/plans/v1/create", {
+      beginDate: periodStart,
+      endDate: periodEnd,
+      studyHours: dailyHours,
+      studyMode,
+      schedule: weekPlan,
+    });
+
+    setStudyPlan(weekPlan);
+    onPlanGenerated?.(weekPlan);
     onGenerated?.();
-  };
+    console.log(
+      "Study plan generated:",
+      weekPlan
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Error generating study plan:",
+      error
+    );
+  }
+};
 
   return (
     <motion.section
@@ -108,6 +147,9 @@ export function CreateStudyPlan({ onGenerated, className }: CreateStudyPlanProps
                 />
               </div>
               <p className="text-xs text-emerald-600/70 truncate">{periodLabel}</p>
+              <p className="text-xs text-emerald-500/80">
+                {studyPlan ? "Study plan ready to preview." : "Generate a plan to preview it here."}
+              </p>
             </div>
 
             <div className="space-y-1.5">

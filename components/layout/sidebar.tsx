@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Home,
-  ListTodo,
   CalendarDays,
   Sparkles,
   Settings,
@@ -18,7 +17,6 @@ import { clearAuthSession } from "@/lib/auth-session";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/tasks", label: "Task", icon: ListTodo },
   { href: "/planner", label: "Planner", icon: CalendarDays },
   { href: "/ai-assistant", label: "AI Assistant", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },

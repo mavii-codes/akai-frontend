@@ -1,4 +1,4 @@
-import type { Deadline, PlannerBlock, ScheduleItem } from "@/types";
+import type { Planner, PlannerBlock, ScheduleItem } from "@/types";
 
 export const todaysSchedule: ScheduleItem[] = [
   {
@@ -44,7 +44,7 @@ function daysFromNow(days: number) {
   return d.toISOString().split("T")[0];
 }
 
-export const upcomingDeadlines: Deadline[] = [
+export const upcomingDeadlines: Planner[] = [
   {
     id: "1",
     title: "Math Exam",

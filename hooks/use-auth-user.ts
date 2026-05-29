@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import {
-  AUTH_SESSION_KEY,
   loadAuthSession,
   type AuthSession,
 } from "@/lib/auth-session";
 import {
-  PROFILE_STORAGE_KEY,
   defaultProfile,
   getDisplayName,
   getAvatarInitial,
@@ -31,11 +29,6 @@ export function useAuthUser() {
     window.addEventListener("akai-auth-updated", refresh);
     window.addEventListener("akai-profile-updated", refresh);
     window.addEventListener("akai-account-updated", refresh);
-    window.addEventListener("storage", (e) => {
-      if (e.key === AUTH_SESSION_KEY || e.key === PROFILE_STORAGE_KEY) {
-        refresh();
-      }
-    });
 
     return () => {
       window.removeEventListener("akai-auth-updated", refresh);

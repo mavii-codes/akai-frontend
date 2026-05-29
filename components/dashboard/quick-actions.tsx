@@ -4,7 +4,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   CalendarPlus,
-  ListPlus,
   MessageCircle,
 } from "lucide-react";
 
@@ -15,13 +14,6 @@ const actions = [
     icon: CalendarPlus,
     href: "/planner",
     gradient: "from-emerald-500 to-emerald-600",
-  },
-  {
-    label: "Add Task",
-    shortLabel: "Add Task",
-    icon: ListPlus,
-    href: "/tasks",
-    gradient: "from-emerald-400 to-emerald-500",
   },
   {
     label: "Ask AI Assistant",

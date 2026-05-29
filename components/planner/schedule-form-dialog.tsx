@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatTimeInput, getTodayDayOfWeek } from "@/lib/time-utils";
 import type { DayOfWeek, PlannerBlock } from "@/types";
-import type { ScheduleInput } from "@/store/planner-store";
 import { cn } from "@/lib/utils";
+
+export type ScheduleInput = {
+  title: string;
+  time: string;
+  type: PlannerBlock["type"];
+  dayOfWeek: DayOfWeek;
+  date?: string;
+};
 
 const DAYS: DayOfWeek[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TYPES = ["class", "study", "break"] as const;
@@ -25,40 +32,39 @@ type ScheduleFormDialogProps = {
   onSave: (data: ScheduleInput) => void;
 };
 
+function getInitialFormState(schedule?: PlannerBlock | null) {
+  const match = schedule?.time.match(/(\d{1,2}):(\d{2})/);
+  let timeValue = "09:00";
+
+  if (match) {
+    let h = Number(match[1]);
+    const m = match[2];
+    if (schedule.time.toUpperCase().includes("PM") && h !== 12) h += 12;
+    if (schedule.time.toUpperCase().includes("AM") && h === 12) h = 0;
+    timeValue = `${String(h).padStart(2, "0")}:${m}`;
+  }
+
+  return {
+    title: schedule?.title ?? "",
+    timeValue,
+    type: schedule?.type ?? "study",
+    dayOfWeek: schedule?.dayOfWeek ?? (getTodayDayOfWeek() as DayOfWeek),
+    date: schedule?.date ?? new Date().toISOString().split("T")[0],
+  };
+}
+
 export function ScheduleFormDialog({
   open,
   onOpenChange,
   schedule,
   onSave,
 }: ScheduleFormDialogProps) {
-  const [title, setTitle] = useState("");
-  const [timeValue, setTimeValue] = useState("09:00");
-  const [type, setType] = useState<PlannerBlock["type"]>("study");
-  const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>("Mon");
-  const [date, setDate] = useState("");
-
-  useEffect(() => {
-    if (schedule) {
-      setTitle(schedule.title);
-      setType(schedule.type);
-      setDayOfWeek(schedule.dayOfWeek);
-      setDate(schedule.date ?? "");
-      const match = schedule.time.match(/(\d{1,2}):(\d{2})/);
-      if (match) {
-        let h = parseInt(match[1], 10);
-        const m = match[2];
-        if (schedule.time.toUpperCase().includes("PM") && h !== 12) h += 12;
-        if (schedule.time.toUpperCase().includes("AM") && h === 12) h = 0;
-        setTimeValue(`${String(h).padStart(2, "0")}:${m}`);
-      }
-    } else {
-      setTitle("");
-      setTimeValue("09:00");
-      setType("study");
-      setDayOfWeek(getTodayDayOfWeek() as DayOfWeek);
-      setDate(new Date().toISOString().split("T")[0]);
-    }
-  }, [schedule, open]);
+  const initialState = getInitialFormState(schedule);
+  const [title, setTitle] = useState(initialState.title);
+  const [timeValue, setTimeValue] = useState(initialState.timeValue);
+  const [type, setType] = useState<PlannerBlock["type"]>(initialState.type);
+  const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>(initialState.dayOfWeek);
+  const [date, setDate] = useState(initialState.date);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +80,11 @@ export function ScheduleFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      key={`${schedule?.id ?? "new"}-${open}`}
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="rounded-2xl border-emerald-100 w-[calc(100vw-2rem)] max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle className="text-emerald-900">
@@ -88,7 +98,7 @@ export function ScheduleFormDialog({
               id="schedule-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Math Review"
+              placeholder="e.g. Study session"
               className="rounded-xl border-emerald-100"
               required
             />

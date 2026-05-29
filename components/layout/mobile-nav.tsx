@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
-  ListTodo,
   CalendarDays,
   Sparkles,
   Settings,
@@ -15,7 +14,6 @@ import { clearAuthSession } from "@/lib/auth-session";
 
 const navItems = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/tasks", label: "Task", icon: ListTodo },
   { href: "/planner", label: "Plan", icon: CalendarDays },
   { href: "/ai-assistant", label: "AI", icon: Sparkles },
   { href: "/settings", label: "Set", icon: Settings },

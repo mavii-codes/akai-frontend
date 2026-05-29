@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarDays, ChevronDown, List } from "lucide-react";
-import { usePlanner } from "@/store/planner-store";
 import { sortByTime } from "@/lib/time-utils";
 import {
   DAY_BORDER_COLORS,
@@ -12,13 +11,16 @@ import {
 } from "@/lib/planner-utils";
 import { cn } from "@/lib/utils";
 import type { DayOfWeek, PlannerBlock } from "@/types";
+import axiosInstance from "@/lib/axios";
+import { useEffect } from "react";
 
 type WeeklyPlanProps = {
   dailyStudyHours?: number;
+  schedules?: PlannerBlock[];
 };
 
-export function WeeklyPlan({ dailyStudyHours = 6 }: WeeklyPlanProps) {
-  const { schedules } = usePlanner();
+export function WeeklyPlan({ dailyStudyHours = 6, schedules = [] }: WeeklyPlanProps) {
+
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [expanded, setExpanded] = useState<Record<DayOfWeek, boolean>>({
     Mon: true,
@@ -29,6 +31,19 @@ export function WeeklyPlan({ dailyStudyHours = 6 }: WeeklyPlanProps) {
     Sat: false,
     Sun: false,
   });
+
+  useEffect(() => {
+      const getInitialState = async () => {
+        try {
+          const response = await axiosInstance.get("/api/deadlines/v1/get");
+
+        } catch (error) {
+          console.error("Error loading deadlines:", error);
+        }
+      };
+  
+      getInitialState();
+    }, []);
 
   const weekDates = useMemo(() => getWeekDates(), []);
 
@@ -141,7 +156,7 @@ export function WeeklyPlan({ dailyStudyHours = 6 }: WeeklyPlanProps) {
                         >
                           {items.length === 0 ? (
                             <li className="text-sm text-emerald-600/50 italic">
-                              No sessions — generate a plan or add blocks.
+                              No sessions yet. Generate a plan or add blocks from your data.
                             </li>
                           ) : (
                             items.map((item) => (
@@ -154,6 +169,9 @@ export function WeeklyPlan({ dailyStudyHours = 6 }: WeeklyPlanProps) {
                                   {item.title}
                                   <span className="text-emerald-500/60 ml-1.5 text-xs">
                                     {item.time}
+                                    <span className="text-emerald-500/60 ml-1.5 text-xs">
+                                    {item.type}
+                                  </span>
                                   </span>
                                 </span>
                               </li>
@@ -185,7 +203,7 @@ export function WeeklyPlan({ dailyStudyHours = 6 }: WeeklyPlanProps) {
       ) : (
         <div className="flex-1 p-4 sm:p-5">
           <div className="grid grid-cols-7 gap-1 sm:gap-2">
-            {weekDates.map(({ weekday, date, label }) => {
+            {weekDates.map(({ weekday, date }) => {
               const items = schedulesByDay[weekday];
               const dayNum = date.getDate();
               return (

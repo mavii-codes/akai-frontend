@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,13 +14,22 @@ import { Label } from "@/components/ui/label";
 import { SUBJECT_COLOR_OPTIONS } from "@/lib/subject-colors";
 import { cn } from "@/lib/utils";
 import type { Subject } from "@/types";
+import axiosInstance from "@/lib/axios";
 
 type SubjectFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   subject?: Subject | null;
-  onSave: (data: { name: string; color: string; dailyHours: number }) => void;
+  onSave: (data: { id: string, name: string; color: string; dailyHours: number }) => void;
 };
+
+function getInitialFormState(subject?: Subject | null) {
+  return {
+    name: subject?.name ?? "",
+    color: subject?.color ?? SUBJECT_COLOR_OPTIONS[0].id,
+    dailyHours: subject?.dailyHours ?? 1.5,
+  };
+}
 
 export function SubjectFormDialog({
   open,
@@ -28,31 +37,40 @@ export function SubjectFormDialog({
   subject,
   onSave,
 }: SubjectFormDialogProps) {
-  const [name, setName] = useState("");
-  const [color, setColor] = useState<string>(SUBJECT_COLOR_OPTIONS[0].id);
-  const [dailyHours, setDailyHours] = useState(1.5);
+  const initialState = getInitialFormState(subject);
+  const [name, setName] = useState(initialState.name);
+  const [color, setColor] = useState<string>(initialState.color);
+  const [dailyHours, setDailyHours] = useState(initialState.dailyHours);
 
-  useEffect(() => {
-    if (open) {
-      setName(subject?.name ?? "");
-      setColor(subject?.color ?? SUBJECT_COLOR_OPTIONS[0].id);
-      setDailyHours(subject?.dailyHours ?? 1.5);
-    }
-  }, [open, subject]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     onSave({
+      id: subject?.id ?? "",
       name: name.trim(),
       color,
       dailyHours: Math.max(0.5, Math.min(8, dailyHours)),
     });
     onOpenChange(false);
+
+    try {
+      const response = await axiosInstance.post("/api/subjects/v1/create", {
+        name: name.trim(),
+        color,
+        dailyHours: Math.max(0.5, Math.min(8, dailyHours)),
+      });
+      console.log("Subject saved:", response.data);
+    } catch (error) {
+      console.error("Error saving subject:", error);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      key={`${subject?.id ?? "new"}-${open}`}
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-md border-emerald-100">
         <DialogHeader>
           <DialogTitle className="text-emerald-900">
@@ -66,7 +84,7 @@ export function SubjectFormDialog({
               id="subject-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Mathematics"
+              placeholder="e.g. Subject name"
               required
             />
           </div>

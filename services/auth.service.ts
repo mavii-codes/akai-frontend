@@ -21,32 +21,56 @@ export type SignupInput = z.infer<typeof signupSchema>;
 
 export const authService = {
   login: async (data: LoginInput) => {
-    const response = await axiosInstance.post("/api/auth/v1/login", data);
-    return response.data;
+    try {
+      const response = await axiosInstance.post("/api/auth/v1/login", data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   signup: async (data: SignupInput) => {
-    const response = await axiosInstance.post("/api/auth/v1/signup", data);
-    return response.data;
+    try {
+      const response = await axiosInstance.post("/api/auth/v1/signup", data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   logout: async () => {
-    const response = await axiosInstance.post("/api/auth/v1/logout");
-    return response.data;
+    try {
+      const response = await axiosInstance.post("/api/auth/v1/logout");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   refreshToken: async () => {
-    const response = await axiosInstance.post("/api/auth/v1/refresh-token");
-    return response.data;
+    try {
+      const response = await axiosInstance.post("/api/auth/v1/refresh-token");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   verifyEmail: async (token: string) => {
-    const response = await axiosInstance.get(`/api/auth/v1/verify-email?token=${token}`);
-    return response.data;
+    try {
+      const response = await axiosInstance.get(`/api/auth/v1/verify-email?token=${token}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   getMe: async () => {
-    const response = await axiosInstance.get("/api/auth/v1/me");
-    return response.data;
+    try {
+      const response = await axiosInstance.get("/api/auth/v1/me");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 };

@@ -13,19 +13,11 @@ export function getCurrentUserEmail(): string | null {
 }
 
 /** Clear tasks & planner for a brand-new account */
-export function initializeNewUserData(email: string) {
-  if (typeof window === "undefined") return;
-  const normalized = email.trim().toLowerCase();
-  localStorage.setItem(getUserStorageKey(TASKS_KEY_PREFIX, normalized), "[]");
-  localStorage.setItem(
-    getUserStorageKey(SCHEDULES_KEY_PREFIX, normalized),
-    "[]"
-  );
-  localStorage.setItem(
-    getUserStorageKey(SUBJECTS_KEY_PREFIX, normalized),
-    "[]"
-  );
-  window.dispatchEvent(new Event("akai-user-data-updated"));
+export function initializeNewUserData(email?: string) {
+  void email;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("akai-user-data-updated"));
+  }
 }
 
 export function notifyUserDataUpdated() {

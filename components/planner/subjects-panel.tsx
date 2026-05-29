@@ -1,17 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useSubjects } from "@/store/subjects-store";
+import { BookOpen, Plus } from "lucide-react";
 import { getSubjectColor } from "@/lib/subject-colors";
 import { SubjectFormDialog } from "@/components/planner/subject-form-dialog";
 import type { Subject } from "@/types";
+import axiosInstance from "@/lib/axios";
 
 export function SubjectsPanel() {
-  const { subjects, addSubject, updateSubject, deleteSubject, totalDailyHours } =
-    useSubjects();
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Subject | null>(null);
 
@@ -20,29 +18,77 @@ export function SubjectsPanel() {
     setDialogOpen(true);
   };
 
-  const openEdit = (subject: Subject) => {
-    setEditing(subject);
-    setDialogOpen(true);
-  };
+  const totalDailyHours = subjects.reduce((sum, subject) => sum + subject.dailyHours, 0);
 
-  const handleDelete = (subject: Subject) => {
-    if (window.confirm(`Remove "${subject.name}"?`)) {
-      deleteSubject(subject.id);
-    }
-  };
-
-  const handleSave = (data: {
+  const handleSave = async (data: {
+    id: string;
     name: string;
     color: string;
     dailyHours: number;
   }) => {
-    if (editing) {
-      updateSubject(editing.id, data);
-    } else {
-      addSubject(data);
+    try {
+      if (editing) {
+        await axiosInstance.put(`/api/subjects/v1/${data.id}`, {
+          name: data.name.trim(),
+          color: data.color,
+          dailyHours: data.dailyHours,
+        });
+      } else {
+        await axiosInstance.post("/api/subjects/v1/create", {
+          name: data.name.trim(),
+          color: data.color,
+          dailyHours: data.dailyHours,
+        });
+      }
+
+      const response = await axiosInstance.get("/api/subjects/v1/get");
+      const payload = Array.isArray(response.data?.data)
+        ? response.data.data
+        : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+      setSubjects(
+        payload.map((item: Partial<Subject> & { dailyHours?: number }) => ({
+          id: String(item.id ?? ""),
+          name: item.name ?? "Untitled subject",
+          color: item.color ?? "#10b981",
+          dailyHours: Number(item.dailyHours ?? 0),
+        }))
+      );
+    } catch (error) {
+      console.error("Error saving subject:", error);
     }
+
     setEditing(null);
+    setDialogOpen(false);
   };
+
+  useEffect(() => {
+    const loadSubjects = async () => {
+      try {
+        const response = await axiosInstance.get("/api/subjects/v1/get");
+        const payload = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+            ? response.data
+            : [];
+
+        setSubjects(
+          payload.map((item: Partial<Subject> & { dailyHours?: number }) => ({
+            id: String(item.id ?? ""),
+            name: item.name ?? "Untitled subject",
+            color: item.color ?? "#10b981",
+            dailyHours: Number(item.dailyHours ?? 0),
+          }))
+        );
+      } catch (error) {
+        console.error("Error loading subjects:", error);
+      }
+    };
+
+    loadSubjects();
+  }, []);
 
   return (
     <motion.section
@@ -91,28 +137,6 @@ export function SubjectsPanel() {
                   <p className="text-xs text-emerald-600/70">
                     Daily: {subject.dailyHours}h
                   </p>
-                </div>
-                <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-emerald-600"
-                    onClick={() => openEdit(subject)}
-                    aria-label={`Edit ${subject.name}`}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-rose-500 hover:text-rose-600"
-                    onClick={() => handleDelete(subject)}
-                    aria-label={`Delete ${subject.name}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
               </li>
             );

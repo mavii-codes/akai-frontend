@@ -18,11 +18,55 @@ import { CreateStudyPlan } from "@/components/planner/create-study-plan";
 import { WeeklyPlan } from "@/components/planner/weekly-plan";
 import { SubjectsPanel } from "@/components/planner/subjects-panel";
 import { PlannerDeadlines } from "@/components/planner/planner-deadlines";
-import { useSubjects } from "@/store/subjects-store";
+import type { DayOfWeek, PlannerBlock } from "@/types";
+
+function toDayOfWeek(day: string): DayOfWeek {
+  const map: Record<string, DayOfWeek> = {
+    Monday: "Mon",
+    Tuesday: "Tue",
+    Wednesday: "Wed",
+    Thursday: "Thu",
+    Friday: "Fri",
+    Saturday: "Sat",
+    Sunday: "Sun",
+  };
+
+  return map[day] ?? "Mon";
+}
+
+function normalizeSchedules(plan: unknown): PlannerBlock[] {
+  const source = Array.isArray(plan)
+    ? plan
+    : Array.isArray((plan as { schedule?: unknown[] })?.schedule)
+      ? (plan as { schedule: unknown[] }).schedule
+      : Array.isArray((plan as { data?: unknown[] })?.data)
+        ? (plan as { data: unknown[] }).data
+        : [];
+
+  return (source as Array<Record<string, unknown>>).flatMap((day, dayIndex) => {
+    const sessions = Array.isArray(day?.sessions) ? day.sessions : [];
+
+    return (sessions as Array<Record<string, unknown>>).map((session, sessionIndex) => {
+      const start = String(session?.startTime ?? session?.time ?? "09:00");
+      const end = session?.endTime ? ` - ${String(session.endTime)}` : "";
+      const title = String(session?.title ?? session?.subject ?? session?.topic ?? "Study session");
+
+      return {
+        id: `plan-${dayIndex}-${sessionIndex}`,
+        time: `${start}${end}`,
+        title,
+        type: "study" as const,
+        dayOfWeek: toDayOfWeek(String(day?.day ?? "Monday")),
+        date: String(day?.date ?? ""),
+      } satisfies PlannerBlock;
+    });
+  });
+}
 
 export function PlannerViews() {
-  const { totalDailyHours } = useSubjects();
   const [dailyHours, setDailyHours] = useState(6);
+  const [studyPlan, setStudyPlan] = useState<unknown>(null);
+  const schedules = normalizeSchedules(studyPlan);
 
   return (
     <div className="space-y-6 w-full min-w-0">
@@ -73,11 +117,14 @@ export function PlannerViews() {
         </PageHeaderActions>
       </motion.header>
 
-      <CreateStudyPlan onGenerated={() => setDailyHours(totalDailyHours || 6)} />
+      <CreateStudyPlan
+        onGenerated={() => setDailyHours(6)}
+        onPlanGenerated={setStudyPlan}
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 min-w-0">
-          <WeeklyPlan dailyStudyHours={totalDailyHours || dailyHours} />
+          <WeeklyPlan dailyStudyHours={dailyHours} schedules={schedules} />
         </div>
         <div className="space-y-6 min-w-0">
           <SubjectsPanel />

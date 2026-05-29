@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,11 +14,12 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+
 import { useAppNotifications } from "@/hooks/use-app-notifications";
+
 import { cn } from "@/lib/utils";
 
 type NotificationsMenuProps = {
-  /** Override badge count (e.g. page-specific); defaults to live app notifications */
   badgeCount?: number;
   className?: string;
   align?: "start" | "center" | "end";
@@ -26,7 +30,18 @@ export function NotificationsMenu({
   className,
   align = "end",
 }: NotificationsMenuProps) {
-  const { items, count, urgentCount } = useAppNotifications();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const notifications = useAppNotifications();
+
+  const items = mounted ? notifications.items : [];
+  const count = mounted ? notifications.count : 0;
+  const urgentCount = mounted ? notifications.urgentCount : 0;
+
   const displayCount = badgeCount ?? count;
 
   return (
@@ -46,6 +61,7 @@ export function NotificationsMenu({
           }
         >
           <Bell className="h-5 w-5 sm:h-[22px] sm:w-[22px]" />
+
           {displayCount > 0 && (
             <span
               className={cn(
@@ -58,11 +74,13 @@ export function NotificationsMenu({
               {displayCount > 9 ? "9+" : displayCount}
             </span>
           )}
+
           {urgentCount > 0 && displayCount > 0 && (
             <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
           )}
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent
         align={align}
         sideOffset={8}
@@ -73,13 +91,16 @@ export function NotificationsMenu({
       >
         <DropdownMenuLabel className="text-emerald-900 font-semibold px-2 py-2">
           Notifications
+
           {displayCount > 0 && (
             <span className="ml-2 text-xs font-normal text-emerald-600/70">
               ({displayCount})
             </span>
           )}
         </DropdownMenuLabel>
+
         <DropdownMenuSeparator className="bg-emerald-50" />
+
         {items.length === 0 ? (
           <p className="px-3 py-6 text-center text-sm text-emerald-600/60">
             You&apos;re all caught up — no reminders right now.
@@ -87,7 +108,10 @@ export function NotificationsMenu({
         ) : (
           items.map((item, i) => (
             <div key={item.id}>
-              {i > 0 && <DropdownMenuSeparator className="bg-emerald-50" />}
+              {i > 0 && (
+                <DropdownMenuSeparator className="bg-emerald-50" />
+              )}
+
               <DropdownMenuItem
                 asChild
                 className={cn(
@@ -101,6 +125,7 @@ export function NotificationsMenu({
                     <span className="font-medium text-sm text-emerald-900 line-clamp-2">
                       {item.title}
                     </span>
+
                     <span className="text-xs text-emerald-600/75 mt-0.5 block">
                       {item.body}
                     </span>
@@ -110,7 +135,10 @@ export function NotificationsMenu({
                     <span className="font-medium text-sm text-emerald-900 line-clamp-2">
                       {item.title}
                     </span>
-                    <span className="text-xs text-emerald-600/75">{item.body}</span>
+
+                    <span className="text-xs text-emerald-600/75">
+                      {item.body}
+                    </span>
                   </>
                 )}
               </DropdownMenuItem>

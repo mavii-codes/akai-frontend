@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
 
 export function StudyStreak() {
-  const streak = 7;
-  const maxDays = 10;
-  const progress = (streak / maxDays) * 100;
+  const completedCount = 0;
+  const totalCount = 1;
+  const streak = Math.min(completedCount, 30);
+  const progress = (completedCount / totalCount) * 100;
   const circumference = 2 * Math.PI * 52;
   const offset = circumference - (progress / 100) * circumference;
 
@@ -58,7 +59,9 @@ export function StudyStreak() {
         </div>
       </div>
       <p className="text-sm text-emerald-700/80 mt-4 font-medium">
-        Great job! Keep it up!
+        {completedCount > 0
+          ? `You completed ${completedCount} task${completedCount === 1 ? "" : "s"} so far.`
+          : "Start adding tasks to build your streak."}
       </p>
     </motion.section>
   );

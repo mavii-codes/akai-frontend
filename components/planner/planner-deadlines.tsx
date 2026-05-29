@@ -1,18 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Target, Plus, ChevronRight } from "lucide-react";
-import {
-  useDeadlines,
-  getDaysLeft,
-  formatDeadlineDate,
-} from "@/store/deadlines-store";
 import { Badge } from "@/components/ui/badge";
 import { DeadlineFormDialog } from "@/components/dashboard/deadline-form-dialog";
 import { DeadlinesViewAll } from "@/components/dashboard/deadlines-view-all";
 import { cn } from "@/lib/utils";
-import type { Deadline } from "@/types";
+import type { Planner, Subject } from "@/types";
+import axiosInstance from "@/lib/axios";
 
 const PREVIEW_COUNT = 3;
 
@@ -23,12 +19,48 @@ function daysLeftBadgeClass(days: number) {
 }
 
 export function PlannerDeadlines() {
-  const { deadlines, addDeadline, updateDeadline } = useDeadlines();
+  const [deadlines, setDeadlines] = useState<Planner[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [viewAllOpen, setViewAllOpen] = useState(false);
-  const [editing, setEditing] = useState<Deadline | null>(null);
+  const [editing, setEditing] = useState<Planner | null>(null);
 
   const preview = deadlines.slice(0, PREVIEW_COUNT);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const getInitialState = async () => {
+      try {
+        const response = await axiosInstance.get("/api/deadlines/v1/get");
+        const subjectsResponse = await axiosInstance.get("/api/subjects/v1/get");
+        const nextDeadlines = Array.isArray(response.data.data)
+          ? response.data.data
+          : Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
+
+        const nextSubjects = Array.isArray(subjectsResponse.data.data)
+          ? subjectsResponse.data.data
+          : Array.isArray(subjectsResponse.data?.data)
+            ? subjectsResponse.data.data
+            : [];
+
+        if (isMounted) {
+          setDeadlines(nextDeadlines as Planner[]);
+          setSubjects(nextSubjects as Subject[]);
+        }
+      } catch (error) {
+        console.error("Error loading deadlines:", error);
+      }
+    };
+
+    getInitialState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <motion.section
@@ -55,15 +87,26 @@ export function PlannerDeadlines() {
       <ul className="space-y-2.5">
         {preview.length === 0 ? (
           <li className="text-sm text-emerald-600/60 text-center py-4">
-            No deadlines yet.
+            No deadlines yet. Add one to populate your study timeline.
           </li>
         ) : (
           preview.map((item) => {
-            const days = getDaysLeft(item.dueDateIso);
-            const dateLabel = formatDeadlineDate(item.dueDateIso);
-            const monthDay = new Date(
-              item.dueDateIso + "T12:00:00"
-            ).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            const dueDate: any = new Date(item.dueDate);
+            const today: any = new Date();
+
+            const daysRemaining = Math.ceil(
+              (dueDate - today) / (1000 * 60 * 60 * 24)
+            );
+          
+            const firstLetter = item.title[0];
+            const dateLabel = new Date(item.dueDate).toLocaleDateString(
+              "en-US",
+              {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              }
+            );
 
             return (
               <li
@@ -72,10 +115,7 @@ export function PlannerDeadlines() {
               >
                 <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-emerald-600 text-white text-center leading-tight">
                   <span className="text-[9px] font-semibold uppercase tracking-wide opacity-90">
-                    {monthDay.split(" ")[0]}
-                  </span>
-                  <span className="text-sm font-bold">
-                    {monthDay.split(" ")[1]}
+                    {firstLetter}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
@@ -88,14 +128,16 @@ export function PlannerDeadlines() {
                   variant="outline"
                   className={cn(
                     "shrink-0 text-xs font-medium",
-                    daysLeftBadgeClass(days)
+                    daysLeftBadgeClass(daysRemaining)
                   )}
                 >
-                  {days === 0
-                    ? "Today"
-                    : days === 1
-                      ? "1 day left"
-                      : `${days} days left`}
+                  {daysRemaining < 0
+                    ? "Past due"
+                    : daysRemaining === 0
+                      ? "Today"
+                      : daysRemaining === 1
+                        ? "1 day left"
+                        : `${daysRemaining} days left`}
                 </Badge>
               </li>
             );
@@ -123,15 +165,11 @@ export function PlannerDeadlines() {
         }}
         deadline={editing}
         onSave={(data) => {
-          if (editing) {
-            updateDeadline(editing.id, data);
-          } else {
-            addDeadline(data);
-          }
+
         }}
       />
 
-      <DeadlinesViewAll open={viewAllOpen} onOpenChange={setViewAllOpen} />
+      <DeadlinesViewAll open={viewAllOpen} onOpenChange={setViewAllOpen} data={deadlines} />
     </motion.section>
   );
 }

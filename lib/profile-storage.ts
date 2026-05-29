@@ -7,8 +7,6 @@ export type UserProfile = {
   profileImage?: string;
 };
 
-export const PROFILE_STORAGE_KEY = "akai-profile";
-
 export const defaultProfile: UserProfile = {
   name: "Jane Doe",
   email: "jane@study.com",
@@ -17,14 +15,7 @@ export const defaultProfile: UserProfile = {
 };
 
 export function loadProfile(): UserProfile {
-  if (typeof window === "undefined") return defaultProfile;
-  const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
-  if (!raw) return mergeWithAuthSession(defaultProfile);
-  try {
-    return mergeWithAuthSession({ ...defaultProfile, ...JSON.parse(raw) });
-  } catch {
-    return mergeWithAuthSession(defaultProfile);
-  }
+  return mergeWithAuthSession(defaultProfile);
 }
 
 /** Prefer saved profile; fill email/name from login session when profile is still default */
@@ -77,8 +68,6 @@ export function saveProfile(profile: UserProfile) {
     email: profile.email.trim().toLowerCase(),
     about: profile.about.trim(),
   };
-
-  localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(normalized));
 
   // Keep login session in sync so sidebar, header, and settings all match
   const session = loadAuthSession();

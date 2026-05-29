@@ -27,11 +27,12 @@ export type ScheduleItem = {
   status: ScheduleStatus;
 };
 
-export type Deadline = {
+export type Planner = {
   id: string;
   title: string;
+  description?: string;
   /** ISO date YYYY-MM-DD */
-  dueDateIso: string;
+  dueDate: string;
   icon: string;
 };
 

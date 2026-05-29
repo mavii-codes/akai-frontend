@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Clock, Plus } from "lucide-react";
-import { usePlanner } from "@/store/planner-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,7 +58,7 @@ function typeDescription(type: PlannerBlock["type"]) {
 }
 
 export function TodaysPlan() {
-  const { schedules } = usePlanner();
+  const schedules: PlannerBlock[] = [];
 
   const todayItems = useMemo(() => {
     const todayDay = getTodayDayOfWeek() as DayOfWeek;

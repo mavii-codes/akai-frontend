@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +25,7 @@ export function DashboardHeader() {
   const { email, displayName, fullName, ready, isLoggedIn } = useAuthUser();
 
   const name = ready && isLoggedIn ? displayName : "Student";
+  const upcomingEvents: Array<{ id: string; title: string; dueDate: string }> = [];
   const greeting = `${getTimeGreeting()}, ${name}! 👋`;
 
   return (
@@ -62,27 +62,24 @@ export function DashboardHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[260px]">
-              <DropdownMenuLabel>Upcoming events</DropdownMenuLabel>
-              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
-                Math exam on May 22 at 09:00 AM.
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
-                Biology quiz on May 24.
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
-                Research paper due May 29.
-              </DropdownMenuItem>
+              <DropdownMenuLabel>Upcoming deadlines</DropdownMenuLabel>
+              {upcomingEvents.length === 0 ? (
+                <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-700">
+                  No deadlines yet. Add one from the dashboard to see it here.
+                </DropdownMenuItem>
+              ) : (
+                upcomingEvents.map((deadline, index) => (
+                  <div key={deadline.id}>
+                    <DropdownMenuItem className="px-3 py-2 text-sm text-emerald-800">
+                      {deadline.title} — {deadline.dueDate}
+                    </DropdownMenuItem>
+                    {index < upcomingEvents.length - 1 && <DropdownMenuSeparator />}
+                  </div>
+                ))
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link href="/tasks">
-            <Button className="rounded-xl gradient-green border-0 shadow-md shadow-emerald-200/40 gap-2">
-              <Plus className="size-4" />
-              New Task
-            </Button>
-          </Link>
         </div>
       </div>
     </motion.header>

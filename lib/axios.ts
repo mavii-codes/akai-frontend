@@ -1,6 +1,16 @@
-import axios from "axios";
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  InternalAxiosRequestConfig,
+} from "axios";
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+if (!backendURL) {
+  throw new Error(
+    "NEXT_PUBLIC_BACKEND_URL is missing in your environment variables."
+  );
+}
 
 const axiosInstance = axios.create({
   baseURL: backendURL,
@@ -10,28 +20,39 @@ const axiosInstance = axios.create({
   },
 });
 
-axiosInstance.interceptors.request.use((config) => {
-  if (config.data instanceof FormData) {
-    if (config.headers) {
-      delete (config.headers as Record<string, unknown>["Content-Type"]);
-      delete (config.headers as Record<string, unknown>["content-type"]);
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const headers = AxiosHeaders.from(config.headers);
+
+    if (config.data instanceof FormData) {
+      headers.delete("Content-Type");
+      headers.delete("content-type");
+
+      config.headers = headers;
+
+      return config;
     }
+
+    headers.set("Content-Type", "application/json");
+
+    config.headers = headers;
+
     return config;
-  }
+  },
+  (error) => Promise.reject(error)
+);
 
-  config.headers = {
-    ...(config.headers ?? {}),
-    "Content-Type": "application/json",
-  };
-
-  return config;
-});
-
-// --- Token Rotation State ---
 let isRefreshing = false;
-let failedQueue: any[] = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (
+  error: unknown,
+  token: string | null = null
+) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -39,19 +60,31 @@ const processQueue = (error: any, token: string | null = null) => {
       prom.resolve(token);
     }
   });
+
   failedQueue = [];
 };
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+
+  async (error: AxiosError) => {
+    if (!error.config) {
+      return Promise.reject(error);
+    }
+
+    const originalRequest =
+      error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
+      };
+
     const status = error.response?.status;
 
-    // --- Token Rotation Logic ---
+    if (axios.isCancel(error)) {
+      return Promise.reject(error);
+    }
+
     if (status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // If already refreshing, wait for it to finish and then retry this request
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -60,46 +93,55 @@ axiosInstance.interceptors.response.use(
       }
 
       originalRequest._retry = true;
+
       isRefreshing = true;
 
       try {
-        // Attempt to refresh the token using the same base URL as the instance
-        const refreshUrl = `${axiosInstance.defaults.baseURL}/api/auth/v1/refresh-token`;
-        await axios.post(refreshUrl, {}, { withCredentials: true });
-        
+        await axiosInstance.post(
+          "/api/auth/v1/refresh-token"
+        );
+
         processQueue(null);
+
         isRefreshing = false;
 
-        // Retry the original request
         return axiosInstance(originalRequest);
-      } catch (refreshError: any) {
+
+      } catch (refreshError: unknown) {
+        const refreshAxiosError =
+          refreshError as AxiosError;
+
+        console.error(
+          refreshAxiosError.response?.data
+        );
+
         processQueue(refreshError, null);
+
         isRefreshing = false;
 
-        // Only redirect to login if the refresh itself was an authentication failure
-        const refreshStatus = refreshError.response?.status;
-        if (refreshStatus === 401 || refreshStatus === 403 || refreshStatus === 400) {
+        const refreshStatus =
+          refreshAxiosError.response?.status;
+
+        if (
+          refreshStatus === 401 ||
+          refreshStatus === 403
+        ) {
           if (typeof window !== "undefined") {
-            localStorage.removeItem("user");
             window.location.href = "/login";
           }
         }
-        
+
         return Promise.reject(refreshError);
       }
     }
 
-    // --- Centralized Error Logging ---
-    if (axios.isCancel(error)) {
-      return Promise.reject(error);
-    }
-
-    if (!status || status >= 500) {
-      console.error(`[API System Error] ${originalRequest.method?.toUpperCase()} ${originalRequest.url}:`, {
-        status: status || "NETWORK_ERROR",
-        message: error.message || "No error message provided",
-      });
-    }
+    console.error({
+      url: originalRequest.url,
+      method: originalRequest.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
 
     return Promise.reject(error);
   }

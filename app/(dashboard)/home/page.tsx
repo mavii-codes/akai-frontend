@@ -1,7 +1,7 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { HeroBanner } from "@/components/dashboard/hero-banner";
 import { TodaysPlan } from "@/components/dashboard/todays-plan";
-import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
+// import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
 import { AiSuggestion } from "@/components/dashboard/ai-suggestion";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { StudyStreak } from "@/components/dashboard/study-streak";
@@ -19,7 +19,7 @@ export default function HomePage() {
             <QuickActions />
           </div>
           <div className="space-y-6">
-            <UpcomingDeadlines />
+
             <StudyStreak />
           </div>
         </div>
