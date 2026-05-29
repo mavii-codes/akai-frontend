@@ -110,23 +110,14 @@ export function LoginForm() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="remember"
-                checked={remember}
-                onCheckedChange={(v) => setRemember(v === true)}
-              />
-              <Label htmlFor="remember" className="text-sm font-normal text-emerald-800/70 cursor-pointer">
-                Remember me
-              </Label>
-            </div>
-
-            <Button
+            <a href="/home">
+              <Button
               type="submit"
               className="w-full h-12 rounded-xl text-base font-semibold gradient-green border-0 shadow-lg shadow-emerald-200/50 hover:opacity-95 transition-opacity"
             >
               Log In
             </Button>
+            </a>
           </form>
 
           <p className="text-center text-sm text-emerald-700/70 mt-6">

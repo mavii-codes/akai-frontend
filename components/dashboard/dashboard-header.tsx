@@ -24,9 +24,8 @@ function getTimeGreeting() {
 export function DashboardHeader() {
   const { email, displayName, fullName, ready, isLoggedIn } = useAuthUser();
 
-  const name = ready && isLoggedIn ? displayName : "Student";
   const upcomingEvents: Array<{ id: string; title: string; dueDate: string }> = [];
-  const greeting = `${getTimeGreeting()}, ${name}! 👋`;
+  const greeting = `${getTimeGreeting()}! 👋`;
 
   return (
     <motion.header
@@ -39,13 +38,6 @@ export function DashboardHeader() {
           <h1 className="text-xl md:text-2xl font-bold text-emerald-900 truncate">
             {greeting}
           </h1>
-          <p className="text-sm text-emerald-600/70 mt-0.5 truncate">
-            {isLoggedIn && email
-              ? fullName !== displayName
-                ? `${fullName} · ${email}`
-                : `Signed in as ${email}`
-              : "Let's make today productive and amazing."}
-          </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <NotificationsMenu />

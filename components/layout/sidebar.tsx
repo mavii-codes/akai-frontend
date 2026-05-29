@@ -11,7 +11,6 @@ import {
   LogOut,
 } from "lucide-react";
 import { PandaLogo } from "@/components/brand/panda-logo";
-import { SidebarUserCard } from "@/components/layout/sidebar-user-card";
 import { cn } from "@/lib/utils";
 import { clearAuthSession } from "@/lib/auth-session";
 
@@ -19,7 +18,6 @@ const navItems = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/planner", label: "Planner", icon: CalendarDays },
   { href: "/ai-assistant", label: "AI Assistant", icon: Sparkles },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -78,7 +76,6 @@ export function Sidebar() {
         </nav>
 
         <div className="mt-auto pt-4 border-t border-emerald-100/80">
-          <SidebarUserCard />
           <button
             type="button"
             onClick={handleLogout}

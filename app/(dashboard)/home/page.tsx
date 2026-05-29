@@ -4,7 +4,6 @@ import { TodaysPlan } from "@/components/dashboard/todays-plan";
 // import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
 import { AiSuggestion } from "@/components/dashboard/ai-suggestion";
 import { QuickActions } from "@/components/dashboard/quick-actions";
-import { StudyStreak } from "@/components/dashboard/study-streak";
 
 export default function HomePage() {
   return (
@@ -19,8 +18,6 @@ export default function HomePage() {
             <QuickActions />
           </div>
           <div className="space-y-6">
-
-            <StudyStreak />
           </div>
         </div>
       </div>
