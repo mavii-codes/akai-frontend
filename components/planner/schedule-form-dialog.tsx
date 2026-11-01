@@ -36,7 +36,7 @@ function getInitialFormState(schedule?: PlannerBlock | null) {
   const match = schedule?.time.match(/(\d{1,2}):(\d{2})/);
   let timeValue = "09:00";
 
-  if (match) {
+  if (match && schedule) {
     let h = Number(match[1]);
     const m = match[2];
     if (schedule.time.toUpperCase().includes("PM") && h !== 12) h += 12;

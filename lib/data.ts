@@ -48,19 +48,19 @@ export const upcomingDeadlines: Planner[] = [
   {
     id: "1",
     title: "Math Exam",
-    dueDateIso: daysFromNow(2),
+    dueDate: daysFromNow(2),
     icon: "calculator",
   },
   {
     id: "2",
     title: "Biology Quiz",
-    dueDateIso: daysFromNow(4),
+    dueDate: daysFromNow(4),
     icon: "microscope",
   },
   {
     id: "3",
     title: "Research Paper",
-    dueDateIso: daysFromNow(9),
+    dueDate: daysFromNow(9),
     icon: "file-text",
   },
 ];

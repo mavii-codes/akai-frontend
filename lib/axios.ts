@@ -6,8 +6,8 @@ import axios, {
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-if (!backendURL) {
-  throw new Error(
+if (!backendURL && typeof window !== "undefined") {
+  console.warn(
     "NEXT_PUBLIC_BACKEND_URL is missing in your environment variables."
   );
 }
