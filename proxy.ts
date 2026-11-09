@@ -28,7 +28,7 @@ export function proxy(request: NextRequest) {
 
   // 3. If visiting landing page root while authenticated, redirect to workspace
   if (isRoot && accessToken) {
-    return NextResponse.redirect(new URL("/homey", request.url));
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
   return NextResponse.next();

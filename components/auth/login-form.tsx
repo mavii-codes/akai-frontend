@@ -8,7 +8,6 @@ import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { PandaLogo } from "@/components/brand/panda-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { AuthDecorations } from "./auth-decorations";
 import { saveAuthSession } from "@/lib/auth-session";
@@ -20,9 +19,8 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail.includes("@")) return;
@@ -32,17 +30,19 @@ export function LoginForm() {
     const profile = loadProfile();
     saveProfile({ ...profile, email: trimmedEmail });
 
-    try {
-          const response = authService.login({
-            email: trimmedEmail,
-            password,
-          });
-          console.log("Login successful:", response);
-          router.push("/register");
-        } catch (error) {
-          console.error("Registration failed:", error);
-        } 
-        router.push("/home");
+    if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+      try {
+        const response = await authService.login({
+          email: trimmedEmail,
+          password,
+        });
+        console.log("Login successful:", response);
+      } catch (error) {
+        console.error("Login API error:", error);
+      }
+    }
+
+    router.push("/home");
   };
 
   return (
@@ -110,14 +110,12 @@ export function LoginForm() {
               </div>
             </div>
 
-            <a href="/home">
-              <Button
+            <Button
               type="submit"
               className="w-full h-12 rounded-xl text-base font-semibold gradient-green border-0 shadow-lg shadow-emerald-200/50 hover:opacity-95 transition-opacity"
             >
               Log In
             </Button>
-            </a>
           </form>
 
           <p className="text-center text-sm text-emerald-700/70 mt-6">

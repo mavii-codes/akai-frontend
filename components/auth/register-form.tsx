@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { AuthDecorations } from "./auth-decorations";
 import { cn } from "@/lib/utils";
 import { saveAuthSession } from "@/lib/auth-session";
-import { loadProfile, saveProfile } from "@/lib/profile-storage";
+import { saveProfile } from "@/lib/profile-storage";
 import { initializeNewUserData } from "@/lib/user-data-storage";
 import { authService } from "@/services/auth.service";
 
@@ -52,7 +52,7 @@ export function RegisterForm() {
     strength >= 50 &&
     passwordsMatch;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
 
@@ -71,17 +71,19 @@ export function RegisterForm() {
       profileImage: "",
     });
 
-    try {
-      const response = authService.signup({
-        name: trimmedName,
-        email: trimmedEmail,
-        password,
-      });
-      console.log("Registration successful:", response);
-      router.push("/register");
-    } catch (error) {
-      console.error("Registration failed:", error);
-    } 
+    if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+      try {
+        const response = await authService.signup({
+          name: trimmedName,
+          email: trimmedEmail,
+          password,
+        });
+        console.log("Registration successful:", response);
+      } catch (error) {
+        console.error("Registration failed:", error);
+      }
+    }
+
     router.push("/home");
   };
 
